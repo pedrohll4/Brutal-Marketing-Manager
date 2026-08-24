@@ -6,6 +6,7 @@ import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getEmbeddableMediaUrl } from '@/lib/utils';
 import { Modal } from '../ui/Modal';
+import { AICopyDrawer } from './AICopyDrawer';
 import {
   Film,
   Camera,
@@ -40,7 +41,7 @@ interface PhotoPin {
 }
 
 export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModalProps) {
-  const { updateTaskStatus, addTaskComment, addToast } = useSystemStore();
+  const { updateTaskStatus, addTaskComment, addToast, clients } = useSystemStore();
   const { user } = useAuth();
 
   // Video State
@@ -62,6 +63,9 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
   ]);
   const [newPinComment, setNewPinComment] = useState('');
   const [pendingPinPos, setPendingPinPos] = useState<{ x: number; y: number } | null>(null);
+
+  // AI Copy State
+  const [showAICopy, setShowAICopy] = useState(false);
 
   if (!task) return null;
 
@@ -151,10 +155,11 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
     );
     addToast({
       title: 'Conteúdo Aprovado! 🎉',
-      description: `"${task.title}" foi aprovado e liberado para publicação.`,
+      description: `"${task.title}" foi aprovado. A IA gerou a legenda para postagem!`,
       type: 'success',
     });
-    onClose();
+    // Automatically trigger AI copywriter generator!
+    setShowAICopy(true);
   };
 
   const handleRequestAdjustments = () => {
@@ -227,8 +232,29 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
                 <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" />
               </a>
             )}
+
+            <button
+              type="button"
+              onClick={() => setShowAICopy(!showAICopy)}
+              className={`ml-auto px-3 py-1 rounded border text-xs font-bold flex items-center gap-1.5 transition-all shadow ${
+                showAICopy
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-primary/15 text-primary border-primary/40 hover:bg-primary/25'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{showAICopy ? 'Ocultar Legenda IA' : '✨ Gerar Legenda & Hashtags com IA'}</span>
+            </button>
           </div>
         )}
+
+        {/* AI Copywriting & Hashtags Drawer */}
+        <AICopyDrawer
+          task={task}
+          client={clients.find((c) => c.id === task.clientId)}
+          isOpen={showAICopy}
+          onClose={() => setShowAICopy(false)}
+        />
 
         {/* ========================================================================= */}
         {/* VIDEO MODE */}

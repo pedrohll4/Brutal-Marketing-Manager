@@ -139,18 +139,29 @@ export default function ClientEntregasPage() {
                   )}
                 </div>
 
-                <div className="pt-3 mt-3 border-t border-[#222] flex items-center justify-between text-xs font-mono">
+                <div className="pt-3 mt-3 border-t border-[#222] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                   <span className="text-on-surface-variant text-[11px]">
                     Prazo: {formatDate(task.dueDate)}
                   </span>
 
-                  <button
-                    onClick={() => setSelectedTaskForReview(task)}
-                    className="text-primary hover:underline text-xs flex items-center gap-1 font-bold"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{isApproved ? 'Ver & Baixar' : 'Revisar & Aprovar'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedTaskForReview(task)}
+                      className="px-2 py-1 rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-[11px] flex items-center gap-1 font-bold transition-colors"
+                      title="Gerar ou ver legenda com IA"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Legenda & #</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedTaskForReview(task)}
+                      className="text-on-surface hover:text-primary text-xs flex items-center gap-1 font-bold"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{isApproved ? 'Ver' : 'Aprovar'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

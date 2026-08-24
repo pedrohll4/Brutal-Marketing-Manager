@@ -5,13 +5,26 @@ import { Task, TaskStatus, TaskType, TaskPriority } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Modal } from '../ui/Modal';
-import { Trash2, MessageSquare, Send, Sparkles, User, Calendar } from 'lucide-react';
+import { AICopyDrawer } from '../approvals/AICopyDrawer';
+import {
+  Film,
+  Camera,
+  Sparkles,
+  Calendar,
+  User,
+  Clock,
+  MessageSquare,
+  Paperclip,
+  Trash2,
+  Send,
+  Plus,
+} from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  taskToEdit?: Task | null;
+  taskToEdit: Task | null;
   initialStatus?: TaskStatus;
 }
 
@@ -24,6 +37,7 @@ export function TaskModal({
   const { clients, employees, campaigns, addTask, updateTask, deleteTask, addTaskComment } =
     useSystemStore();
   const { user } = useAuth();
+  const [showAICopy, setShowAICopy] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -380,7 +394,33 @@ export function TaskModal({
               />
             </div>
           </div>
+
+          {/* AI Copy Button */}
+          <div className="pt-2 border-t border-[#262626] flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowAICopy(!showAICopy)}
+              className={`px-3 py-1.5 rounded border text-xs font-bold font-mono flex items-center gap-1.5 transition-all shadow ${
+                showAICopy
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/20'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{showAICopy ? 'Ocultar Legenda IA' : '✨ Gerar Legenda & Hashtags com IA'}</span>
+            </button>
+          </div>
         </div>
+
+        {/* AI Copywriting & Hashtags Drawer */}
+        {taskToEdit && (
+          <AICopyDrawer
+            task={taskToEdit}
+            client={clients.find((c) => c.id === taskToEdit.clientId)}
+            isOpen={showAICopy}
+            onClose={() => setShowAICopy(false)}
+          />
+        )}
 
         {/* Comments Section (If editing) */}
         {taskToEdit && (
