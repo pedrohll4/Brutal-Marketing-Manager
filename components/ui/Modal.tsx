@@ -9,7 +9,7 @@ interface ModalProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
 }
 
 export function Modal({
@@ -43,38 +43,40 @@ export function Modal({
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
     '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
   }[maxWidth];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Backdrop with blur matching Stitch Dark */}
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Dialog */}
+      {/* Modal Card */}
       <div
-        className={`relative w-full ${maxWidthClass} bg-[#141414] border border-[#2a2a2a] rounded-lg shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150`}
+        className={`relative w-full ${maxWidthClass} bg-[#131313] border border-[#262626] rounded-xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626] bg-[#121212]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626] bg-[#161616]">
           <div>
-            <h3 className="font-bold text-lg text-on-surface">{title}</h3>
+            <h3 className="font-bold text-base text-on-surface">{title}</h3>
             {subtitle && (
-              <p className="text-xs text-on-surface-variant font-mono mt-0.5">{subtitle}</p>
+              <p className="font-mono text-xs text-on-surface-variant mt-0.5">{subtitle}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-[#201f1f] transition-colors"
+            className="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-[#262626] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-5 max-h-[80vh] overflow-y-auto">{children}</div>
+        {/* Scrollable Content */}
+        <div className="p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
