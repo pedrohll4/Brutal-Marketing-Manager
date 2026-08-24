@@ -43,10 +43,22 @@ export function CampaignTimeline({ campaign }: CampaignTimelineProps) {
         </span>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 pb-4 border-b border-[#222]">
         <p className="font-mono text-xs text-on-surface-variant mb-1">Campanha Selecionada</p>
         <p className="font-bold text-primary text-sm">{campaign.name}</p>
         <p className="text-xs text-on-surface-variant mt-0.5">{campaign.clientName}</p>
+
+        <button
+          onClick={() => {
+            const videoTitle = prompt('Título ou Tema do Novo Vídeo:');
+            if (videoTitle && videoTitle.trim()) {
+              window.location.href = '/producao';
+            }
+          }}
+          className="mt-3 w-full py-2 rounded bg-[#1c1c1c] hover:bg-primary/20 text-primary border border-primary/30 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+        >
+          <span>+ Adicionar Vídeo a esta Campanha</span>
+        </button>
       </div>
 
       {/* Vertical Stepper matching Stitch */}
