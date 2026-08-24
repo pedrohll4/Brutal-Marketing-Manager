@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Task } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { useAuth } from '@/lib/context/AuthContext';
+import { getEmbeddableMediaUrl } from '@/lib/utils';
 import { Modal } from '../ui/Modal';
 import {
   Film,
@@ -17,7 +18,9 @@ import {
   Send,
   Sparkles,
   MapPin,
-  ZoomIn,
+  ExternalLink,
+  FolderOpen,
+  FileText,
   Download,
 } from 'lucide-react';
 
@@ -43,7 +46,7 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
   // Video State
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSecond, setCurrentSecond] = useState(15);
-  const totalDuration = 60; // 60s video
+  const totalDuration = 60; // 60s video simulation
   const [timestampComment, setTimestampComment] = useState('');
 
   // Photo State (Visual Pinning on Image)
@@ -64,6 +67,9 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
 
   const isVideo = task.taskType === 'VIDEO' || !task.taskType;
   const isPhoto = task.taskType === 'PHOTO';
+
+  const mediaInfo = getEmbeddableMediaUrl(task.mediaUrl);
+  const hasEmbedPlayer = mediaInfo.type === 'gdrive_file' || mediaInfo.type === 'youtube' || mediaInfo.type === 'vimeo';
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -176,50 +182,111 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
       maxWidth="3xl"
     >
       <div className="space-y-6">
+        {/* Drive Resources Header Links */}
+        {(task.rawFolderUrl || task.scriptUrl || task.mediaUrl) && (
+          <div className="flex flex-wrap items-center gap-2 p-2.5 bg-[#181818] border border-[#262626] rounded-lg text-xs font-mono">
+            <span className="text-on-surface-variant font-bold uppercase text-[10px] mr-1">
+              Recursos de Produção:
+            </span>
+
+            {task.mediaUrl && (
+              <a
+                href={task.mediaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded bg-[#222] hover:bg-primary/20 hover:text-primary border border-[#333] text-on-surface flex items-center gap-1 transition-colors"
+              >
+                <Film className="w-3 h-3 text-primary" />
+                <span>Abrir Mídia Original</span>
+                <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" />
+              </a>
+            )}
+
+            {task.rawFolderUrl && (
+              <a
+                href={task.rawFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded bg-[#222] hover:bg-primary/20 hover:text-primary border border-[#333] text-on-surface flex items-center gap-1 transition-colors"
+              >
+                <FolderOpen className="w-3 h-3 text-amber-400" />
+                <span>Pasta de Brutos (Drive)</span>
+                <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" />
+              </a>
+            )}
+
+            {task.scriptUrl && (
+              <a
+                href={task.scriptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded bg-[#222] hover:bg-primary/20 hover:text-primary border border-[#333] text-on-surface flex items-center gap-1 transition-colors"
+              >
+                <FileText className="w-3 h-3 text-blue-400" />
+                <span>Roteiro / Docs</span>
+                <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" />
+              </a>
+            )}
+          </div>
+        )}
+
         {/* ========================================================================= */}
         {/* VIDEO MODE */}
         {/* ========================================================================= */}
         {isVideo && (
           <div className="space-y-4">
-            {/* Interactive Player Screen */}
-            <div className="relative aspect-video bg-black rounded-lg border border-[#2e2e2e] overflow-hidden flex flex-col justify-between p-4 shadow-2xl">
-              {/* Top Watermark / Info */}
-              <div className="flex justify-between items-center text-xs font-mono z-10">
-                <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-primary font-bold border border-primary/20 flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5" /> PREVIEW 4K UHD • 60 FPS
-                </span>
-                <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-zinc-300">
-                  {formatTime(currentSecond)} / {formatTime(totalDuration)}
-                </span>
-              </div>
-
-              {/* Center Play Button Overlay */}
-              <div className="flex items-center justify-center">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-16 h-16 rounded-full bg-primary/90 hover:bg-primary text-white flex items-center justify-center shadow-2xl hover:scale-105 transition-all"
-                >
-                  {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
-                </button>
-              </div>
-
-              {/* Bottom Scrubber Timeline */}
-              <div className="space-y-2 z-10">
-                <input
-                  type="range"
-                  min="0"
-                  max={totalDuration}
-                  value={currentSecond}
-                  onChange={(e) => setCurrentSecond(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#333] rounded-lg appearance-none cursor-pointer accent-primary"
+            {/* If there is a Google Drive / YouTube / Vimeo Embed */}
+            {hasEmbedPlayer && mediaInfo.embedUrl ? (
+              <div className="relative aspect-video bg-black rounded-lg border border-[#2e2e2e] overflow-hidden shadow-2xl">
+                <iframe
+                  src={mediaInfo.embedUrl}
+                  title="Player de Pré-visualização"
+                  className="w-full h-full border-0"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
                 />
-                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400">
-                  <span>Início (00:00)</span>
-                  <span className="text-primary font-bold">Pausa atual: {formatTime(currentSecond)}</span>
-                  <span>Fim ({formatTime(totalDuration)})</span>
+              </div>
+            ) : (
+              /* Fallback: Interactive Video Player Simulation */
+              <div className="relative aspect-video bg-black rounded-lg border border-[#2e2e2e] overflow-hidden flex flex-col justify-between p-4 shadow-2xl">
+                {/* Top Watermark / Info */}
+                <div className="flex justify-between items-center text-xs font-mono z-10">
+                  <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-primary font-bold border border-primary/20 flex items-center gap-1.5">
+                    <Film className="w-3.5 h-3.5" /> PREVIEW 4K UHD • 60 FPS
+                  </span>
+                  <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded text-zinc-300">
+                    {formatTime(currentSecond)} / {formatTime(totalDuration)}
+                  </span>
+                </div>
+
+                {/* Center Play Button Overlay */}
+                <div className="flex items-center justify-center">
+                  <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="w-16 h-16 rounded-full bg-primary/90 hover:bg-primary text-white flex items-center justify-center shadow-2xl hover:scale-105 transition-all"
+                  >
+                    {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
+                  </button>
+                </div>
+
+                {/* Bottom Scrubber Timeline */}
+                <div className="space-y-2 z-10">
+                  <input
+                    type="range"
+                    min="0"
+                    max={totalDuration}
+                    value={currentSecond}
+                    onChange={(e) => setCurrentSecond(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#333] rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400">
+                    <span>Início (00:00)</span>
+                    <span className="text-primary font-bold">Pausa atual: {formatTime(currentSecond)}</span>
+                    <span>Fim ({formatTime(totalDuration)})</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Timestamp Comment Input */}
             <form
@@ -271,7 +338,11 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=90"
+                src={
+                  task.mediaUrl && !task.mediaUrl.includes('drive.google.com')
+                    ? task.mediaUrl
+                    : 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=90'
+                }
                 alt="Ensaio Fotográfico"
                 className="w-full h-full object-cover pointer-events-none"
               />

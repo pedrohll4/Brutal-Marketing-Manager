@@ -37,6 +37,9 @@ export function TaskModal({
     dueDate: new Date().toISOString().split('T')[0],
     isExtra: false,
     extraPrice: 150,
+    mediaUrl: '',
+    rawFolderUrl: '',
+    scriptUrl: '',
   });
 
   const [commentText, setCommentText] = useState('');
@@ -55,6 +58,9 @@ export function TaskModal({
         dueDate: taskToEdit.dueDate,
         isExtra: taskToEdit.isExtra,
         extraPrice: taskToEdit.extraPrice || 150,
+        mediaUrl: taskToEdit.mediaUrl || '',
+        rawFolderUrl: taskToEdit.rawFolderUrl || '',
+        scriptUrl: taskToEdit.scriptUrl || '',
       });
     } else {
       setFormData({
@@ -69,6 +75,9 @@ export function TaskModal({
         dueDate: new Date().toISOString().split('T')[0],
         isExtra: false,
         extraPrice: 150,
+        mediaUrl: '',
+        rawFolderUrl: '',
+        scriptUrl: '',
       });
     }
     setCommentText('');
@@ -315,6 +324,62 @@ export function TaskModal({
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
           />
+        </div>
+
+        {/* Google Drive & Media Links Section */}
+        <div className="p-3.5 bg-[#161616] border border-[#282828] rounded-lg space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold uppercase text-primary flex items-center gap-1.5">
+              📁 Links do Google Drive & Mídias
+            </span>
+            <span className="text-[10px] font-mono text-on-surface-variant">
+              Embed e Player Automático
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-mono text-on-surface-variant mb-1">
+              Link do Vídeo Final ou Foto Tratada (Google Drive / YouTube / MP4):
+            </label>
+            <input
+              type="url"
+              placeholder="https://drive.google.com/file/d/... ou https://youtu.be/..."
+              value={formData.mediaUrl}
+              onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })}
+              className="w-full bg-[#121212] border border-[#333] rounded px-3 py-1.5 text-xs text-on-surface font-mono focus:border-primary focus:outline-none"
+            />
+            <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
+              💡 Ao colar o link de visualização do Google Drive, ele tocará direto no player de aprovação do cliente!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-mono text-on-surface-variant mb-1">
+                Pasta de Arquivos Brutos / RAW (Google Drive):
+              </label>
+              <input
+                type="url"
+                placeholder="https://drive.google.com/drive/folders/..."
+                value={formData.rawFolderUrl}
+                onChange={(e) => setFormData({ ...formData, rawFolderUrl: e.target.value })}
+                className="w-full bg-[#121212] border border-[#333] rounded px-3 py-1.5 text-xs text-on-surface font-mono focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono text-on-surface-variant mb-1">
+                Link do Roteiro / Copywriting (Docs/Notion):
+              </label>
+              <input
+                type="url"
+                placeholder="https://docs.google.com/document/d/..."
+                value={formData.scriptUrl}
+                onChange={(e) => setFormData({ ...formData, scriptUrl: e.target.value })}
+                className="w-full bg-[#121212] border border-[#333] rounded px-3 py-1.5 text-xs text-on-surface font-mono focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Comments Section (If editing) */}

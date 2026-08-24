@@ -132,9 +132,11 @@ export default function ClientEntregasPage() {
                   <h3 className="font-bold text-sm text-on-surface line-clamp-2 mb-1 group-hover:text-primary transition-colors">
                     {task.title}
                   </h3>
-                  <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
-                    {task.description || 'Conteúdo finalizado aguardando aprovação ou liberado para download.'}
-                  </p>
+                  {task.mediaUrl && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded w-fit">
+                      <span>📁 Link do Google Drive anexado</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-3 mt-3 border-t border-[#222] flex items-center justify-between text-xs font-mono">

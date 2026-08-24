@@ -137,6 +137,9 @@ export interface Task {
   isExtra: boolean;
   extraPrice: number;
   completedAt?: string;
+  mediaUrl?: string; // Link do Google Drive / YouTube / MP4 para visualização
+  rawFolderUrl?: string; // Link da pasta do Google Drive com arquivos brutos / fotos RAW
+  scriptUrl?: string; // Link do Google Docs / Notion / PDF do roteiro
   comments?: TaskComment[];
   attachments?: TaskAttachment[];
   createdAt: string;
