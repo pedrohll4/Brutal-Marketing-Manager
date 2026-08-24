@@ -395,8 +395,10 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       id: `tsk-extra-${Date.now()}`,
       clientId: req.clientId,
       clientName: req.clientName,
-      title: `[EXTRA] ${req.quantity}x ${req.serviceType} - ${req.description.substring(0, 40)}`,
-      description: req.description,
+      title: req.serviceType === 'EVENT'
+        ? `[EVENTO EXTRA] Cobertura: ${req.description.substring(0, 45)}`
+        : `[EXTRA] ${req.quantity}x ${req.serviceType} - ${req.description.substring(0, 40)}`,
+      description: `${req.description}${req.eventLocation ? ` | Local: ${req.eventLocation}` : ''}${req.requiresDrone ? ' | [Requer Drone/Imagens Aéreas]' : ''}`,
       taskType: req.serviceType === 'VIDEO' ? 'VIDEO' : req.serviceType === 'PHOTO' ? 'PHOTO' : 'EVENT',
       status: 'PLANNED',
       priority: 'HIGH',
@@ -407,6 +409,23 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     };
 
     setTasks((prev) => [newTask, ...prev]);
+
+    // 1.1 If it's an Event or has location/hours, automatically schedule in the Calendar!
+    if (req.serviceType === 'EVENT' || req.serviceType === 'DAILY' || req.eventLocation) {
+      const newCalEvent: CalendarEvent = {
+        id: `evt-extra-${Date.now()}`,
+        clientId: req.clientId,
+        clientName: req.clientName,
+        title: req.serviceType === 'EVENT' ? `Cobertura Evento: ${req.clientName}` : `Gravação Extra: ${req.clientName}`,
+        date: req.desiredDate,
+        startTime: req.eventStartTime || '09:00',
+        endTime: req.eventEndTime || '18:00',
+        location: req.eventLocation || 'Presencial / Externa',
+        eventType: req.serviceType === 'PHOTO' ? 'PHOTO' : req.serviceType === 'EVENT' ? 'RECORDING' : 'PRODUCTION',
+        description: `Serviço extra solicitado pelo cliente: ${req.description}`,
+      };
+      setCalendarEvents((prev) => [...prev, newCalEvent]);
+    }
 
     // 2. Mark request as approved
     const updatedRequests = serviceRequests.map((r) =>

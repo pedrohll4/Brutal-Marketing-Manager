@@ -184,6 +184,12 @@ export interface ServiceRequest {
   notes?: string;
   status: ServiceRequestStatus;
   convertedTaskId?: string;
+  eventLocation?: string;
+  eventStartTime?: string;
+  eventEndTime?: string;
+  requiresDrone?: boolean;
+  videoFormat?: string;
+  photoType?: string;
   createdAt: string;
   approvedAt?: string;
 }

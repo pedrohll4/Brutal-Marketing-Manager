@@ -145,9 +145,27 @@ export default function SolicitacoesPage() {
                   </span>
                 </div>
 
-                <p className="text-xs text-on-surface-variant leading-relaxed mb-4">
+                <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
                   {req.description}
                 </p>
+
+                {req.eventLocation && (
+                  <div className="mb-3 p-2 rounded bg-[#1f1912] border border-primary/30 text-[11px] font-mono text-primary flex flex-col gap-0.5">
+                    <span className="font-bold flex items-center gap-1">
+                      📍 Local: {req.eventLocation}
+                    </span>
+                    {(req.eventStartTime || req.eventEndTime) && (
+                      <span className="text-on-surface-variant text-[10px]">
+                        ⏰ Horário: {req.eventStartTime || '09:00'} às {req.eventEndTime || '18:00'}
+                      </span>
+                    )}
+                    {req.requiresDrone && (
+                      <span className="text-emerald-400 text-[10px] font-bold">
+                        🚁 [Captação Aérea com Drone Solicitada]
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="p-3 bg-[#181818] border border-[#242424] rounded text-xs font-mono space-y-1.5 mb-4">
                   <div className="flex justify-between text-on-surface-variant">
