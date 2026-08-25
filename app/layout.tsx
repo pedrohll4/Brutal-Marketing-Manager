@@ -5,6 +5,7 @@ import { SystemStoreProvider } from "@/lib/context/SystemStoreContext";
 import { ToastContainer } from "@/components/ui/Toast";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { PushNotificationPrompt } from "@/components/notifications/PushNotificationPrompt";
 
 export const viewport: Viewport = {
   themeColor: "#FF5500",
@@ -50,6 +51,7 @@ export default function RootLayout({
             <CommandPalette />
             <ToastContainer />
             <PWAInstallPrompt />
+            <PushNotificationPrompt />
           </SystemStoreProvider>
         </AuthProvider>
       </body>

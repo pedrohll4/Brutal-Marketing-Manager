@@ -26,6 +26,8 @@ import {
   Download,
 } from 'lucide-react';
 
+import { notifyVideoApproved } from '@/lib/services/pushNotificationService';
+
 interface MediaApprovalModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -154,6 +156,7 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
       user?.fullName || 'Cliente',
       user?.role || 'CLIENT'
     );
+    notifyVideoApproved(user?.fullName || 'Cliente', task.title).catch(() => {});
     addToast({
       title: 'Conteúdo Aprovado! 🎉',
       description: `"${task.title}" foi aprovado. A IA gerou a legenda para postagem!`,
@@ -262,8 +265,17 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
         {/* ========================================================================= */}
         {isVideo && (
           <div className="space-y-4">
-            {/* If there is a Google Drive / YouTube / Vimeo Embed */}
-            {hasEmbedPlayer && mediaInfo.embedUrl ? (
+            {/* If there is a direct uploaded video file (MP4/blob/storage) */}
+            {task.mediaUrl && (task.mediaUrl.includes('.mp4') || task.mediaUrl.includes('.mov') || task.mediaUrl.startsWith('blob:') || task.mediaUrl.includes('supabase') || task.mediaUrl.includes('storage')) ? (
+              <div className="relative aspect-video bg-black rounded-lg border border-[#2e2e2e] overflow-hidden shadow-2xl flex items-center justify-center">
+                <video
+                  src={task.mediaUrl}
+                  controls
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={(e) => setCurrentSecond(Math.floor((e.target as HTMLVideoElement).currentTime))}
+                />
+              </div>
+            ) : hasEmbedPlayer && mediaInfo.embedUrl ? (
               <div className="relative aspect-video bg-black rounded-lg border border-[#2e2e2e] overflow-hidden shadow-2xl">
                 <iframe
                   src={mediaInfo.embedUrl}

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { Modal } from '../ui/Modal';
 import { AICopyDrawer } from '../approvals/AICopyDrawer';
 import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
+import { MediaUploader } from '../media/MediaUploader';
 import {
   Film,
   Camera,
@@ -341,32 +342,21 @@ export function TaskModal({
           />
         </div>
 
-        {/* Google Drive & Media Links Section */}
-        <div className="p-3.5 bg-[#161616] border border-[#282828] rounded-lg space-y-3">
+        {/* Cloud Media Upload & Drive Links Section */}
+        <div className="p-4 bg-[#161616] border border-[#282828] rounded-xl space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold uppercase text-primary flex items-center gap-1.5">
-              📁 Links do Google Drive & Mídias
+              📁 Entrega de Mídia (Upload Direto ou Link)
             </span>
-            <span className="text-[10px] font-mono text-on-surface-variant">
-              Embed e Player Automático
+            <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/40 px-2 py-0.5 rounded">
+              ⚡ Nuvem & Streaming
             </span>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-mono text-on-surface-variant mb-1">
-              Link do Vídeo Final ou Foto Tratada (Google Drive / YouTube / MP4):
-            </label>
-            <input
-              type="url"
-              placeholder="https://drive.google.com/file/d/... ou https://youtu.be/..."
-              value={formData.mediaUrl}
-              onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })}
-              className="w-full bg-[#121212] border border-[#333] rounded px-3 py-1.5 text-xs text-on-surface font-mono focus:border-primary focus:outline-none"
-            />
-            <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
-              💡 Ao colar o link de visualização do Google Drive, ele tocará direto no player de aprovação do cliente!
-            </p>
-          </div>
+          <MediaUploader
+            initialUrl={formData.mediaUrl}
+            onMediaUploaded={(media) => setFormData((prev) => ({ ...prev, mediaUrl: media.url }))}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
