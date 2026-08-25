@@ -6,6 +6,7 @@ import { TopNavBar } from '@/components/layout/TopNavBar';
 import { MobileNav } from '@/components/layout/MobileNav';
 
 import { PendingRequestsAlertBar } from '@/components/notifications/PendingRequestsAlertBar';
+import { AdminPendingRequestsModal } from '@/components/notifications/AdminPendingRequestsModal';
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Pop-up automático ao logar se houver solicitações pendentes */}
+      <AdminPendingRequestsModal />
 
       {/* Mobile Navigation */}
       <MobileNav
