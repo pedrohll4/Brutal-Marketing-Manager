@@ -44,12 +44,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#131313] text-on-surface flex flex-col justify-center items-center p-4">
       {/* Brand Header */}
-      <div className="text-center mb-6 max-w-xs w-full">
-        <div className="rounded-2xl overflow-hidden shadow-2xl border border-primary/40 p-3.5 bg-[#181818] mb-3 flex items-center justify-center">
+      <div className="text-center mb-8 max-w-sm w-full">
+        <div className="py-2 px-4 flex items-center justify-center mb-2">
           <img
-            src="/images/brutal-logo.png"
+            src="/images/brutal-logo-white-transparent.png"
             alt="Brutal Marketing"
-            className="w-full h-auto object-contain max-h-16"
+            className="w-full h-auto object-contain max-h-16 drop-shadow-[0_4px_25px_rgba(255,85,0,0.35)]"
           />
         </div>
         <p className="font-mono text-xs text-on-surface-variant uppercase tracking-widest">

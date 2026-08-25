@@ -50,9 +50,9 @@ export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProp
           <div className="relative w-72 h-full bg-[#131313] border-r border-[#262626] p-4 flex flex-col z-10 animate-in slide-in-from-left duration-200">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#262626]">
               <img
-                src="/images/brutal-logo.png"
+                src="/images/brutal-logo-white-transparent.png"
                 alt="Brutal Marketing"
-                className="h-8 w-auto object-contain"
+                className="h-8 w-auto object-contain drop-shadow"
               />
               <button
                 onClick={onCloseMobileMenu}
