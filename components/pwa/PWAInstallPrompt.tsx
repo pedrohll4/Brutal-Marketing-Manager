@@ -95,9 +95,11 @@ export function PWAInstallPrompt() {
       >
         <div className="flex items-center gap-3">
           {/* App Icon */}
-          <div className="w-11 h-11 rounded-xl bg-[#121212] border border-primary/40 flex items-center justify-center shrink-0 shadow-md">
-            <span className="font-black text-primary text-xl">B</span>
-          </div>
+          <img
+            src="/images/brutal-icon.png"
+            alt="Brutal Marketing"
+            className="w-11 h-11 rounded-xl object-cover border border-primary/40 shrink-0 shadow-md"
+          />
 
           <div>
             <h4 className="text-xs font-bold text-on-surface font-mono flex items-center gap-1.5">

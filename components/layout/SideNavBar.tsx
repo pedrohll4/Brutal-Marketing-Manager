@@ -63,14 +63,22 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
         className={`bg-[#131313] text-on-surface h-screen w-64 fixed left-0 top-0 overflow-y-auto border-r border-[#262626] flex flex-col py-6 z-40 ${className}`}
       >
         {/* Brand Logo Header */}
-        <div className="px-6 mb-8">
+        <div className="px-5 mb-6">
           <Link href={isClient ? '/portal-cliente' : '/'} className="group block">
-            <h1 className="text-2xl font-black text-primary uppercase tracking-tighter leading-none group-hover:text-[#ff6a22] transition-colors">
-              Brutal<br />Manager
-            </h1>
-            <p className="font-mono text-[10px] text-on-surface-variant mt-1.5 uppercase tracking-widest font-semibold flex items-center gap-1">
-              <span>Marketing Control</span>
-              {isClient && <span className="text-primary text-[9px] font-bold">• CLIENTE</span>}
+            <div className="rounded-xl overflow-hidden shadow-lg border border-primary/30 group-hover:border-primary transition-all p-2 bg-[#1a1a1a] flex items-center justify-center">
+              <img
+                src="/images/brutal-logo.png"
+                alt="Brutal Marketing"
+                className="w-full h-auto object-contain max-h-12"
+              />
+            </div>
+            <p className="font-mono text-[9px] text-on-surface-variant mt-2 uppercase tracking-widest font-semibold flex items-center justify-between px-1">
+              <span>CONTROLE DE PRODUÇÃO</span>
+              {isClient ? (
+                <span className="text-primary font-bold bg-primary/10 px-1.5 py-0.2 rounded">PORTAL</span>
+              ) : (
+                <span className="text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.2 rounded">PRO</span>
+              )}
             </p>
           </Link>
         </div>

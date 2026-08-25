@@ -141,10 +141,12 @@ Brutal Marketing`.trim();
             </p>
           </div>
 
-          <div className="text-right">
-            <h2 className="text-2xl font-black text-primary uppercase leading-none">
-              BRUTAL<br />MARKETING
-            </h2>
+          <div className="text-right flex flex-col items-end">
+            <img
+              src="/images/brutal-logo.png"
+              alt="Brutal Marketing"
+              className="h-11 w-auto object-contain rounded"
+            />
             <p className="text-[10px] font-mono text-on-surface-variant print:text-zinc-600 mt-1">
               Marketing & Audiovisual de Alta Performance
             </p>
