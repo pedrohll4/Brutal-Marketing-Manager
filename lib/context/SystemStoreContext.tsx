@@ -24,6 +24,13 @@ import {
   mockMonthlyReports,
   mockNotifications,
 } from '../data/mockData';
+import {
+  fetchInitialDataFromSupabase,
+  syncClientToSupabase,
+  deleteClientFromSupabase,
+  syncTaskToSupabase,
+  syncRequestToSupabase,
+} from '@/lib/supabase/syncService';
 
 export interface ToastMessage {
   id: string;
@@ -115,7 +122,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const [notifications, setNotifications] = useState<NotificationItem[]>(mockNotifications);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Load from local storage if available for session persistence
+  // Load from local storage and cloud database
   useEffect(() => {
     try {
       const savedClients = localStorage.getItem('brutal_clients');
@@ -148,6 +155,16 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     } catch {
       // ignore
     }
+
+    // Sync with Cloud Supabase PostgreSQL
+    fetchInitialDataFromSupabase().then((cloudData) => {
+      if (cloudData) {
+        if (cloudData.clients && cloudData.clients.length > 0) setClients(cloudData.clients);
+        if (cloudData.tasks && cloudData.tasks.length > 0) setTasks(cloudData.tasks);
+        if (cloudData.employees && cloudData.employees.length > 0) setEmployees(cloudData.employees);
+        if (cloudData.serviceRequests && cloudData.serviceRequests.length > 0) setServiceRequests(cloudData.serviceRequests);
+      }
+    });
   }, []);
 
   const saveClientsToStorage = (newClients: Client[]) => {
@@ -211,6 +228,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     };
     const updated = [newClient, ...clients];
     saveClientsToStorage(updated);
+    syncClientToSupabase(newClient);
     addToast({
       title: 'Cliente Cadastrado',
       description: `${newClient.name} (${newClient.companyName}) foi adicionado com sucesso.`,
@@ -221,6 +239,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const updateClient = (id: string, updates: Partial<Client>) => {
     const updated = clients.map((c) => (c.id === id ? { ...c, ...updates } : c));
     saveClientsToStorage(updated);
+    const modified = updated.find((c) => c.id === id);
+    if (modified) syncClientToSupabase(modified);
     addToast({
       title: 'Cliente Atualizado',
       description: 'As alterações foram salvas.',
@@ -232,6 +252,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     const client = clients.find((c) => c.id === id);
     const updated = clients.filter((c) => c.id !== id);
     saveClientsToStorage(updated);
+    deleteClientFromSupabase(id, client?.email);
     addToast({
       title: 'Cliente Removido',
       description: `${client?.name || 'Cliente'} foi removido do sistema.`,
