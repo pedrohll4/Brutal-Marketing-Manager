@@ -1,4 +1,4 @@
-import { Client, Employee, Task, ServiceRequest, Invoice, Campaign, CalendarEvent } from '@/lib/types';
+import { Client, Employee, Task, ServiceRequest, Campaign, CalendarEvent, Invoice } from '@/lib/types';
 
 // ==========================================
 // CLIENT MAPPERS
@@ -77,6 +77,7 @@ export function mapDbToEmployee(db: any): Employee {
     assignedClientIds: [],
     canManageFinance: Boolean(db.can_manage_finance),
     canManageClients: Boolean(db.can_manage_clients),
+    salary: Number(db.salary) || 0,
     createdAt: db.created_at ? db.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
   };
 }
@@ -86,6 +87,7 @@ export function mapEmployeeToDb(e: Partial<Employee>): any {
   if (e.name !== undefined) db.name = e.name;
   if (e.email !== undefined) db.email = e.email;
   if (e.username !== undefined) db.username = e.username;
+  if (e.password !== undefined) db.initial_password = e.password;
   if (e.phone !== undefined) db.phone = e.phone;
   if (e.avatarUrl !== undefined) db.avatar_url = e.avatarUrl;
   if (e.roleTitle !== undefined) db.role_title = e.roleTitle;
@@ -186,5 +188,117 @@ export function mapRequestToDb(r: Partial<ServiceRequest>): any {
   if (r.eventEndTime !== undefined) db.event_end_time = r.eventEndTime;
   if (r.requiresDrone !== undefined) db.requires_drone = r.requiresDrone;
   if (r.approvedAt !== undefined) db.approved_at = r.approvedAt;
+  return db;
+}
+
+// ==========================================
+// CAMPAIGN MAPPERS
+// ==========================================
+export function mapDbToCampaign(db: any, clients?: Client[]): Campaign {
+  const client = clients?.find((c) => c.id === db.client_id);
+  return {
+    id: db.id,
+    clientId: db.client_id,
+    clientName: client?.name || 'Cliente',
+    name: db.name || '',
+    description: db.description || '',
+    startDate: db.start_date,
+    endDate: db.end_date,
+    budget: Number(db.budget) || 0,
+    contentCount: Number(db.content_count) || 0,
+    progressPct: Number(db.progress_pct) || 0,
+    status: db.status || 'PLANNING',
+    currentStep: db.current_step || 'BRIEFING',
+    assignedEmployeeIds: db.assigned_employee_ids || [],
+    assignedEmployeeNames: db.assigned_employee_names || [],
+    createdAt: db.created_at ? db.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+  };
+}
+
+export function mapCampaignToDb(c: Partial<Campaign>): any {
+  const db: any = {};
+  if (c.clientId !== undefined) db.client_id = c.clientId;
+  if (c.name !== undefined) db.name = c.name;
+  if (c.description !== undefined) db.description = c.description;
+  if (c.startDate !== undefined) db.start_date = c.startDate;
+  if (c.endDate !== undefined) db.end_date = c.endDate;
+  if (c.budget !== undefined) db.budget = c.budget;
+  if (c.contentCount !== undefined) db.content_count = c.contentCount;
+  if (c.progressPct !== undefined) db.progress_pct = c.progressPct;
+  if (c.status !== undefined) db.status = c.status;
+  if (c.currentStep !== undefined) db.current_step = c.currentStep;
+  return db;
+}
+
+// ==========================================
+// CALENDAR EVENT MAPPERS
+// ==========================================
+export function mapDbToCalendarEvent(db: any, clients?: Client[]): CalendarEvent {
+  const client = clients?.find((c) => c.id === db.client_id);
+  return {
+    id: db.id,
+    clientId: db.client_id || '',
+    clientName: client?.name || '',
+    title: db.title || '',
+    date: db.event_date,
+    startTime: db.start_time || '',
+    endTime: db.end_time || '',
+    location: db.location || '',
+    eventType: db.event_type || 'RECORDING',
+    description: db.description || '',
+  };
+}
+
+export function mapCalendarEventToDb(e: Partial<CalendarEvent>): any {
+  const db: any = {};
+  if (e.clientId !== undefined) db.client_id = e.clientId || null;
+  if (e.title !== undefined) db.title = e.title;
+  if (e.date !== undefined) db.event_date = e.date;
+  if (e.startTime !== undefined) db.start_time = e.startTime || null;
+  if (e.endTime !== undefined) db.end_time = e.endTime || null;
+  if (e.location !== undefined) db.location = e.location;
+  if (e.eventType !== undefined) db.event_type = e.eventType;
+  if (e.description !== undefined) db.description = e.description;
+  return db;
+}
+
+// ==========================================
+// INVOICE MAPPERS
+// ==========================================
+export function mapDbToInvoice(db: any, clients?: Client[]): Invoice {
+  const client = clients?.find((c) => c.id === db.client_id);
+  return {
+    id: db.id,
+    clientId: db.client_id,
+    clientName: client?.name || 'Cliente',
+    referenceMonth: Number(db.reference_month),
+    referenceYear: Number(db.reference_year),
+    baseAmount: Number(db.base_amount) || 0,
+    extrasAmount: Number(db.extras_amount) || 0,
+    totalAmount: Number(db.total_amount) || 0,
+    dueDate: db.due_date,
+    status: db.status || 'PENDING',
+    pixKey: db.pix_key || '',
+    pixQrCodeUrl: db.pix_qr_code_url || '',
+    pixPayload: db.pix_payload || '',
+    paidAt: db.paid_at,
+    items: [],
+    createdAt: db.created_at ? db.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+  };
+}
+
+export function mapInvoiceToDb(inv: Partial<Invoice>): any {
+  const db: any = {};
+  if (inv.clientId !== undefined) db.client_id = inv.clientId;
+  if (inv.referenceMonth !== undefined) db.reference_month = inv.referenceMonth;
+  if (inv.referenceYear !== undefined) db.reference_year = inv.referenceYear;
+  if (inv.baseAmount !== undefined) db.base_amount = inv.baseAmount;
+  if (inv.extrasAmount !== undefined) db.extras_amount = inv.extrasAmount;
+  if (inv.totalAmount !== undefined) db.total_amount = inv.totalAmount;
+  if (inv.dueDate !== undefined) db.due_date = inv.dueDate;
+  if (inv.status !== undefined) db.status = inv.status;
+  if (inv.pixKey !== undefined) db.pix_key = inv.pixKey;
+  if (inv.pixPayload !== undefined) db.pix_payload = inv.pixPayload;
+  if (inv.paidAt !== undefined) db.paid_at = inv.paidAt;
   return db;
 }

@@ -1,35 +1,26 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
-  Client,
-  Employee,
-  Campaign,
-  Task,
-  TaskStatus,
-  CalendarEvent,
-  ServiceRequest,
-  Invoice,
-  MonthlyReport,
-  NotificationItem,
+  Client, Employee, Campaign, Task, TaskStatus,
+  CalendarEvent, ServiceRequest, Invoice,
+  MonthlyReport, NotificationItem,
 } from '../types';
 import {
-  mockClients,
-  mockEmployees,
-  mockCampaigns,
-  mockTasks,
-  mockCalendarEvents,
-  mockServiceRequests,
-  mockInvoices,
-  mockMonthlyReports,
-  mockNotifications,
+  mockClients, mockEmployees, mockCampaigns, mockTasks,
+  mockCalendarEvents, mockServiceRequests, mockInvoices,
+  mockMonthlyReports, mockNotifications,
 } from '../data/mockData';
 import {
   fetchInitialDataFromSupabase,
-  syncClientToSupabase,
-  deleteClientFromSupabase,
-  syncTaskToSupabase,
+  syncClientToSupabase, deleteClientFromSupabase,
+  syncEmployeeToSupabase,
+  syncTaskToSupabase, deleteTaskFromSupabase,
+  syncCampaignToSupabase, deleteCampaignFromSupabase,
+  syncCalendarEventToSupabase, deleteCalendarEventFromSupabase,
   syncRequestToSupabase,
+  syncInvoiceToSupabase,
+  syncProfileToSupabase,
 } from '@/lib/supabase/syncService';
 
 export interface ToastMessage {
@@ -40,7 +31,6 @@ export interface ToastMessage {
 }
 
 interface SystemStoreContextType {
-  // Data State
   clients: Client[];
   employees: Employee[];
   campaigns: Campaign[];
@@ -52,51 +42,42 @@ interface SystemStoreContextType {
   notifications: NotificationItem[];
   unreadNotificationCount: number;
   toasts: ToastMessage[];
+  isLoadingData: boolean;
 
-  // Toast actions
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
 
-  // Clients
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
   updateClient: (id: string, updates: Partial<Client>) => void;
   deleteClient: (id: string) => void;
 
-  // Employees
   addEmployee: (employee: Omit<Employee, 'id' | 'createdAt'>) => void;
   updateEmployee: (id: string, updates: Partial<Employee>) => void;
 
-  // Tasks / Kanban
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   updateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
   deleteTask: (id: string) => void;
   addTaskComment: (taskId: string, content: string, authorName: string, authorRole: string) => void;
 
-  // Campaigns
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt'>) => void;
   updateCampaign: (id: string, updates: Partial<Campaign>) => void;
   deleteCampaign: (id: string) => void;
 
-  // Calendar
   addCalendarEvent: (event: Omit<CalendarEvent, 'id'>) => void;
   updateCalendarEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteCalendarEvent: (id: string) => void;
 
-  // Service Requests (Extras)
   addServiceRequest: (request: Omit<ServiceRequest, 'id' | 'createdAt' | 'status'>) => void;
   approveServiceRequest: (requestId: string) => void;
   rejectServiceRequest: (requestId: string) => void;
 
-  // Invoices & Payments
   markInvoiceAsPaid: (invoiceId: string) => void;
   createInvoice: (invoice: Omit<Invoice, 'id' | 'createdAt'>) => void;
 
-  // Notifications
   markNotificationAsRead: (notificationId: string) => void;
   markAllNotificationsAsRead: () => void;
 
-  // System & Admin Contact Settings
   adminWhatsApp: string;
   updateAdminWhatsApp: (phone: string) => void;
   pixKey: string;
@@ -108,6 +89,7 @@ interface SystemStoreContextType {
 const SystemStoreContext = createContext<SystemStoreContextType | undefined>(undefined);
 
 export function SystemStoreProvider({ children }: { children: React.ReactNode }) {
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [adminWhatsApp, setAdminWhatsApp] = useState<string>('(16) 99123-4567');
   const [pixKey, setPixKey] = useState<string>('financeiro@brutalmarketing.com.br');
   const [pixBeneficiary, setPixBeneficiary] = useState<string>('Brutal Marketing Ltda');
@@ -118,189 +100,157 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(mockCalendarEvents);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(mockServiceRequests);
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
-  const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>(mockMonthlyReports);
+  const [monthlyReports] = useState<MonthlyReport[]>(mockMonthlyReports);
   const [notifications, setNotifications] = useState<NotificationItem[]>(mockNotifications);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Load from local storage and cloud database
+  // ────────────────────────────────────────────────────────────
+  // BOOT — load from Supabase (source of truth)
+  // ────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Restore settings from localStorage
     try {
-      const savedClients = localStorage.getItem('brutal_clients');
-      if (savedClients) {
-        const parsed = JSON.parse(savedClients);
-        if (Array.isArray(parsed) && parsed.length > 0) setClients(parsed);
-      }
+      const wa = localStorage.getItem('brutal_admin_whatsapp');
+      if (wa) setAdminWhatsApp(wa);
+      const pk = localStorage.getItem('brutal_pix_key');
+      if (pk) setPixKey(pk);
+      const pb = localStorage.getItem('brutal_pix_beneficiary');
+      if (pb) setPixBeneficiary(pb);
+    } catch {}
 
-      const savedEmployees = localStorage.getItem('brutal_employees');
-      if (savedEmployees) {
-        const parsed = JSON.parse(savedEmployees);
-        if (Array.isArray(parsed) && parsed.length > 0) setEmployees(parsed);
-      }
-
-      const savedTasks = localStorage.getItem('brutal_tasks');
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-      const savedRequests = localStorage.getItem('brutal_requests');
-      if (savedRequests) setServiceRequests(JSON.parse(savedRequests));
-      const savedInvoices = localStorage.getItem('brutal_invoices');
-      if (savedInvoices) setInvoices(JSON.parse(savedInvoices));
-
-      const savedAdminWa = localStorage.getItem('brutal_admin_whatsapp');
-      if (savedAdminWa) setAdminWhatsApp(savedAdminWa);
-
-      const savedPixKey = localStorage.getItem('brutal_pix_key');
-      if (savedPixKey) setPixKey(savedPixKey);
-
-      const savedBeneficiary = localStorage.getItem('brutal_pix_beneficiary');
-      if (savedBeneficiary) setPixBeneficiary(savedBeneficiary);
-    } catch {
-      // ignore
-    }
-
-    // Sync with Cloud Supabase PostgreSQL
+    // Fetch all live data from Supabase
     fetchInitialDataFromSupabase().then((cloudData) => {
       if (cloudData) {
-        if (cloudData.clients && cloudData.clients.length > 0) setClients(cloudData.clients);
-        if (cloudData.tasks && cloudData.tasks.length > 0) setTasks(cloudData.tasks);
-        if (cloudData.employees && cloudData.employees.length > 0) setEmployees(cloudData.employees);
-        if (cloudData.serviceRequests && cloudData.serviceRequests.length > 0) setServiceRequests(cloudData.serviceRequests);
+        if (cloudData.clients.length > 0) setClients(cloudData.clients);
+        if (cloudData.employees.length > 0) setEmployees(cloudData.employees);
+        if (cloudData.campaigns.length > 0) setCampaigns(cloudData.campaigns);
+        if (cloudData.tasks.length > 0) setTasks(cloudData.tasks);
+        if (cloudData.serviceRequests.length > 0) setServiceRequests(cloudData.serviceRequests);
+        if (cloudData.calendarEvents.length > 0) setCalendarEvents(cloudData.calendarEvents);
+        if (cloudData.invoices.length > 0) setInvoices(cloudData.invoices);
       }
+      setIsLoadingData(false);
     });
   }, []);
 
-  const saveClientsToStorage = (newClients: Client[]) => {
-    setClients(newClients);
-    try {
-      localStorage.setItem('brutal_clients', JSON.stringify(newClients));
-    } catch {}
-  };
-
-  const saveEmployeesToStorage = (newEmployees: Employee[]) => {
-    setEmployees(newEmployees);
-    try {
-      localStorage.setItem('brutal_employees', JSON.stringify(newEmployees));
-    } catch {}
-  };
-
+  // ────────────────────────────────────────────────────────────
+  // SETTINGS
+  // ────────────────────────────────────────────────────────────
   const updateAdminWhatsApp = (phone: string) => {
     setAdminWhatsApp(phone);
-    try {
-      localStorage.setItem('brutal_admin_whatsapp', phone);
-    } catch {}
-    addToast({
-      title: 'WhatsApp do Admin Atualizado',
-      description: `Notificações de solicitações serão enviadas para ${phone}.`,
-      type: 'success',
-    });
+    try { localStorage.setItem('brutal_admin_whatsapp', phone); } catch {}
+    addToast({ title: 'WhatsApp do Admin Atualizado', description: `Notificações serão enviadas para ${phone}.`, type: 'success' });
   };
-
   const updatePixKey = (key: string) => {
     setPixKey(key);
-    try {
-      localStorage.setItem('brutal_pix_key', key);
-    } catch {}
+    try { localStorage.setItem('brutal_pix_key', key); } catch {}
   };
-
   const updatePixBeneficiary = (name: string) => {
     setPixBeneficiary(name);
-    try {
-      localStorage.setItem('brutal_pix_beneficiary', name);
-    } catch {}
+    try { localStorage.setItem('brutal_pix_beneficiary', name); } catch {}
   };
 
-  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+  // ────────────────────────────────────────────────────────────
+  // TOASTS
+  // ────────────────────────────────────────────────────────────
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { ...toast, id }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  };
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }, []);
+  const removeToast = useCallback((id: string) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // Client Actions
+  // ────────────────────────────────────────────────────────────
+  // CLIENTS
+  // ────────────────────────────────────────────────────────────
   const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
     const newClient: Client = {
       ...clientData,
-      id: `cli-${Date.now()}`,
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString().split('T')[0],
     };
-    const updated = [newClient, ...clients];
-    saveClientsToStorage(updated);
+    setClients((prev) => [newClient, ...prev]);
     syncClientToSupabase(newClient);
-    addToast({
-      title: 'Cliente Cadastrado',
-      description: `${newClient.name} (${newClient.companyName}) foi adicionado com sucesso.`,
-      type: 'success',
-    });
+    // Sync login profile so client can log in from any device
+    if (newClient.email && newClient.password) {
+      syncProfileToSupabase({
+        id: `prof-cli-${newClient.id}`,
+        email: newClient.email,
+        username: newClient.username || newClient.email.split('@')[0],
+        password: newClient.password,
+        fullName: newClient.name,
+        role: 'CLIENT',
+        clientId: newClient.id,
+      });
+    }
+    addToast({ title: 'Cliente Cadastrado', description: `${newClient.name} adicionado com sucesso.`, type: 'success' });
   };
 
   const updateClient = (id: string, updates: Partial<Client>) => {
-    const updated = clients.map((c) => (c.id === id ? { ...c, ...updates } : c));
-    saveClientsToStorage(updated);
-    const modified = updated.find((c) => c.id === id);
-    if (modified) syncClientToSupabase(modified);
-    addToast({
-      title: 'Cliente Atualizado',
-      description: 'As alterações foram salvas.',
-      type: 'info',
+    setClients((prev) => {
+      const updated = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
+      const modified = updated.find((c) => c.id === id);
+      if (modified) syncClientToSupabase(modified);
+      return updated;
     });
+    addToast({ title: 'Cliente Atualizado', description: 'As alterações foram salvas.', type: 'info' });
   };
 
   const deleteClient = (id: string) => {
     const client = clients.find((c) => c.id === id);
-    const updated = clients.filter((c) => c.id !== id);
-    saveClientsToStorage(updated);
-    deleteClientFromSupabase(id, client?.email);
-    addToast({
-      title: 'Cliente Removido',
-      description: `${client?.name || 'Cliente'} foi removido do sistema.`,
-      type: 'warning',
-    });
+    setClients((prev) => prev.filter((c) => c.id !== id));
+    deleteClientFromSupabase(id);
+    addToast({ title: 'Cliente Removido', description: `${client?.name || 'Cliente'} removido.`, type: 'warning' });
   };
 
-  // Employee Actions
+  // ────────────────────────────────────────────────────────────
+  // EMPLOYEES
+  // ────────────────────────────────────────────────────────────
   const addEmployee = (empData: Omit<Employee, 'id' | 'createdAt'>) => {
     const newEmp: Employee = {
       ...empData,
-      id: `emp-${Date.now()}`,
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString().split('T')[0],
     };
-    const updated = [...employees, newEmp];
-    saveEmployeesToStorage(updated);
-    addToast({
-      title: 'Funcionário Cadastrado',
-      description: `${newEmp.name} foi adicionado à equipe.`,
-      type: 'success',
-    });
+    setEmployees((prev) => [...prev, newEmp]);
+    syncEmployeeToSupabase(newEmp);
+    // Sync login profile so employee can log in from any device
+    if (newEmp.email && newEmp.password) {
+      syncProfileToSupabase({
+        id: `prof-emp-${newEmp.id}`,
+        email: newEmp.email,
+        username: newEmp.username || newEmp.email.split('@')[0],
+        password: newEmp.password,
+        fullName: newEmp.name,
+        role: 'EMPLOYEE',
+        employeeId: newEmp.id,
+      });
+    }
+    addToast({ title: 'Funcionário Cadastrado', description: `${newEmp.name} adicionado à equipe.`, type: 'success' });
   };
 
   const updateEmployee = (id: string, updates: Partial<Employee>) => {
-    const updated = employees.map((e) => (e.id === id ? { ...e, ...updates } : e));
-    saveEmployeesToStorage(updated);
-    addToast({
-      title: 'Equipe Atualizada',
-      description: 'Dados do colaborador foram atualizados.',
-      type: 'info',
+    setEmployees((prev) => {
+      const updated = prev.map((e) => (e.id === id ? { ...e, ...updates } : e));
+      const modified = updated.find((e) => e.id === id);
+      if (modified) syncEmployeeToSupabase(modified);
+      return updated;
     });
+    addToast({ title: 'Equipe Atualizada', description: 'Dados do colaborador atualizados.', type: 'info' });
   };
 
-  // Task Actions
+  // ────────────────────────────────────────────────────────────
+  // TASKS
+  // ────────────────────────────────────────────────────────────
   const addTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
     const newTask: Task = {
       ...taskData,
-      id: `tsk-${Date.now()}`,
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString().split('T')[0],
     };
-    const updated = [newTask, ...tasks];
-    setTasks(updated);
-    try {
-      localStorage.setItem('brutal_tasks', JSON.stringify(updated));
-    } catch {}
-
-    // Add notification
-    const newNotif: NotificationItem = {
+    setTasks((prev) => [newTask, ...prev]);
+    syncTaskToSupabase(newTask);
+    setNotifications((prev) => [{
       id: `notif-${Date.now()}`,
       title: 'Nova Tarefa Criada',
       message: `Tarefa "${newTask.title}" adicionada para ${newTask.clientName}.`,
@@ -308,61 +258,41 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       type: 'TASK',
       isRead: false,
       createdAt: 'Agora mesmo',
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
-
-    addToast({
-      title: 'Tarefa Criada',
-      description: `"${newTask.title}" adicionada ao Kanban.`,
-      type: 'success',
-    });
+    }, ...prev]);
+    addToast({ title: 'Tarefa Criada', description: `"${newTask.title}" adicionada ao Kanban.`, type: 'success' });
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    const updated = tasks.map((t) => (t.id === id ? { ...t, ...updates } : t));
-    setTasks(updated);
-    try {
-      localStorage.setItem('brutal_tasks', JSON.stringify(updated));
-    } catch {}
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
+      const modified = updated.find((t) => t.id === id);
+      if (modified) syncTaskToSupabase(modified);
+      return updated;
+    });
   };
 
   const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const completedAt =
-      ['APPROVED', 'PUBLISHED'].includes(newStatus) && !task.completedAt
-        ? new Date().toISOString()
-        : task.completedAt;
-
-    const updated = tasks.map((t) =>
-      t.id === taskId ? { ...t, status: newStatus, completedAt } : t
-    );
-    setTasks(updated);
-    try {
-      localStorage.setItem('brutal_tasks', JSON.stringify(updated));
-    } catch {}
-
-    // Feedback
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId);
+      if (!task) return prev;
+      const completedAt =
+        ['APPROVED', 'PUBLISHED'].includes(newStatus) && !task.completedAt
+          ? new Date().toISOString()
+          : task.completedAt;
+      const updated = prev.map((t) => t.id === taskId ? { ...t, status: newStatus, completedAt } : t);
+      const modified = updated.find((t) => t.id === taskId);
+      if (modified) syncTaskToSupabase(modified);
+      return updated;
+    });
     if (newStatus === 'PUBLISHED') {
-      addToast({
-        title: 'Conteúdo Publicado! 🎉',
-        description: `"${task.title}" finalizado e computado na cota de ${task.clientName}.`,
-        type: 'success',
-      });
+      addToast({ title: 'Conteúdo Publicado! 🎉', description: 'Entrega computada na cota do cliente.', type: 'success' });
     }
   };
 
   const deleteTask = (id: string) => {
-    const updated = tasks.filter((t) => t.id !== id);
-    setTasks(updated);
-    try {
-      localStorage.setItem('brutal_tasks', JSON.stringify(updated));
-    } catch {}
-    addToast({
-      title: 'Tarefa Excluída',
-      type: 'info',
-    });
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    deleteTaskFromSupabase(id);
+    addToast({ title: 'Tarefa Excluída', type: 'info' });
   };
 
   const addTaskComment = (taskId: string, content: string, authorName: string, authorRole: string) => {
@@ -385,84 +315,74 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     );
   };
 
-  // Campaign Actions
+  // ────────────────────────────────────────────────────────────
+  // CAMPAIGNS
+  // ────────────────────────────────────────────────────────────
   const addCampaign = (campaignData: Omit<Campaign, 'id' | 'createdAt'>) => {
     const newCamp: Campaign = {
       ...campaignData,
-      id: `camp-${Date.now()}`,
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString().split('T')[0],
     };
     setCampaigns((prev) => [newCamp, ...prev]);
-    addToast({
-      title: 'Campanha Iniciada',
-      description: `"${newCamp.name}" adicionada com sucesso.`,
-      type: 'success',
-    });
+    syncCampaignToSupabase(newCamp);
+    addToast({ title: 'Campanha Iniciada', description: `"${newCamp.name}" adicionada com sucesso.`, type: 'success' });
   };
 
   const updateCampaign = (id: string, updates: Partial<Campaign>) => {
-    setCampaigns((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
-    addToast({
-      title: 'Campanha Atualizada',
-      description: 'Progresso da campanha salvo.',
-      type: 'info',
+    setCampaigns((prev) => {
+      const updated = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
+      const modified = updated.find((c) => c.id === id);
+      if (modified) syncCampaignToSupabase(modified);
+      return updated;
     });
+    addToast({ title: 'Campanha Atualizada', description: 'Progresso salvo.', type: 'info' });
   };
 
   const deleteCampaign = (id: string) => {
     setCampaigns((prev) => prev.filter((c) => c.id !== id));
-    addToast({
-      title: 'Campanha Removida',
-      type: 'warning',
-    });
+    deleteCampaignFromSupabase(id);
+    addToast({ title: 'Campanha Removida', type: 'warning' });
   };
 
-  // Calendar Actions
+  // ────────────────────────────────────────────────────────────
+  // CALENDAR EVENTS
+  // ────────────────────────────────────────────────────────────
   const addCalendarEvent = (eventData: Omit<CalendarEvent, 'id'>) => {
-    const newEvent: CalendarEvent = {
-      ...eventData,
-      id: `evt-${Date.now()}`,
-    };
+    const newEvent: CalendarEvent = { ...eventData, id: crypto.randomUUID() };
     setCalendarEvents((prev) => [...prev, newEvent]);
-    addToast({
-      title: 'Evento Agendado',
-      description: `${newEvent.title} em ${newEvent.date}.`,
-      type: 'success',
-    });
+    syncCalendarEventToSupabase(newEvent);
+    addToast({ title: 'Evento Agendado', description: `${newEvent.title} em ${newEvent.date}.`, type: 'success' });
   };
 
   const updateCalendarEvent = (id: string, updates: Partial<CalendarEvent>) => {
-    setCalendarEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-    );
+    setCalendarEvents((prev) => {
+      const updated = prev.map((e) => (e.id === id ? { ...e, ...updates } : e));
+      const modified = updated.find((e) => e.id === id);
+      if (modified) syncCalendarEventToSupabase(modified);
+      return updated;
+    });
   };
 
   const deleteCalendarEvent = (id: string) => {
     setCalendarEvents((prev) => prev.filter((e) => e.id !== id));
-    addToast({
-      title: 'Evento Removido',
-      type: 'info',
-    });
+    deleteCalendarEventFromSupabase(id);
+    addToast({ title: 'Evento Removido', type: 'info' });
   };
 
-  // Service Requests (Extras)
+  // ────────────────────────────────────────────────────────────
+  // SERVICE REQUESTS
+  // ────────────────────────────────────────────────────────────
   const addServiceRequest = (requestData: Omit<ServiceRequest, 'id' | 'createdAt' | 'status'>) => {
     const newRequest: ServiceRequest = {
       ...requestData,
-      id: `req-${Date.now()}`,
+      id: crypto.randomUUID(),
       status: 'PENDING',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     };
-    const updated = [newRequest, ...serviceRequests];
-    setServiceRequests(updated);
-    try {
-      localStorage.setItem('brutal_requests', JSON.stringify(updated));
-    } catch {}
-
-    // Add notification to Admin
-    const notif: NotificationItem = {
+    setServiceRequests((prev) => [newRequest, ...prev]);
+    syncRequestToSupabase(newRequest);
+    setNotifications((prev) => [{
       id: `notif-${Date.now()}`,
       title: 'Nova Solicitação de Extra',
       message: `${newRequest.clientName} solicitou ${newRequest.quantity}x ${newRequest.serviceType} (R$ ${newRequest.totalEstimated}).`,
@@ -470,29 +390,22 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       type: 'REQUEST',
       isRead: false,
       createdAt: 'Agora mesmo',
-    };
-    setNotifications((prev) => [notif, ...prev]);
-
-    addToast({
-      title: 'Solicitação Enviada',
-      description: 'Sua solicitação de serviço extra foi enviada para aprovação.',
-      type: 'success',
-    });
+    }, ...prev]);
+    addToast({ title: 'Solicitação Enviada', description: 'Aguardando aprovação do Admin.', type: 'success' });
   };
 
   const approveServiceRequest = (requestId: string) => {
     const req = serviceRequests.find((r) => r.id === requestId);
     if (!req) return;
 
-    // 1. Convert to a Kanban Task
     const newTask: Task = {
-      id: `tsk-extra-${Date.now()}`,
+      id: crypto.randomUUID(),
       clientId: req.clientId,
       clientName: req.clientName,
       title: req.serviceType === 'EVENT'
         ? `[EVENTO EXTRA] Cobertura: ${req.description.substring(0, 45)}`
         : `[EXTRA] ${req.quantity}x ${req.serviceType} - ${req.description.substring(0, 40)}`,
-      description: `${req.description}${req.eventLocation ? ` | Local: ${req.eventLocation}` : ''}${req.requiresDrone ? ' | [Requer Drone/Imagens Aéreas]' : ''}`,
+      description: `${req.description}${req.eventLocation ? ` | Local: ${req.eventLocation}` : ''}${req.requiresDrone ? ' | [Requer Drone]' : ''}`,
       taskType: req.serviceType === 'VIDEO' ? 'VIDEO' : req.serviceType === 'PHOTO' ? 'PHOTO' : 'EVENT',
       status: 'PLANNED',
       priority: 'HIGH',
@@ -501,13 +414,12 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       extraPrice: req.totalEstimated,
       createdAt: new Date().toISOString().split('T')[0],
     };
-
     setTasks((prev) => [newTask, ...prev]);
+    syncTaskToSupabase(newTask);
 
-    // 1.1 If it's an Event or has location/hours, automatically schedule in the Calendar!
     if (req.serviceType === 'EVENT' || req.serviceType === 'DAILY' || req.eventLocation) {
       const newCalEvent: CalendarEvent = {
-        id: `evt-extra-${Date.now()}`,
+        id: crypto.randomUUID(),
         clientId: req.clientId,
         clientName: req.clientName,
         title: req.serviceType === 'EVENT' ? `Cobertura Evento: ${req.clientName}` : `Gravação Extra: ${req.clientName}`,
@@ -515,184 +427,104 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
         startTime: req.eventStartTime || '09:00',
         endTime: req.eventEndTime || '18:00',
         location: req.eventLocation || 'Presencial / Externa',
-        eventType: req.serviceType === 'PHOTO' ? 'PHOTO' : req.serviceType === 'EVENT' ? 'RECORDING' : 'PRODUCTION',
-        description: `Serviço extra solicitado pelo cliente: ${req.description}`,
+        eventType: req.serviceType === 'PHOTO' ? 'PHOTO' : 'RECORDING',
+        description: `Serviço extra: ${req.description}`,
       };
       setCalendarEvents((prev) => [...prev, newCalEvent]);
+      syncCalendarEventToSupabase(newCalEvent);
     }
 
-    // 2. Mark request as approved
-    const updatedRequests = serviceRequests.map((r) =>
+    const updatedReqs = serviceRequests.map((r) =>
       r.id === requestId
-        ? {
-            ...r,
-            status: 'APPROVED' as const,
-            convertedTaskId: newTask.id,
-            approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          }
+        ? { ...r, status: 'APPROVED' as const, convertedTaskId: newTask.id, approvedAt: new Date().toISOString().replace('T', ' ').substring(0, 16) }
         : r
     );
-    setServiceRequests(updatedRequests);
-    try {
-      localStorage.setItem('brutal_requests', JSON.stringify(updatedRequests));
-    } catch {}
+    setServiceRequests(updatedReqs);
+    const updatedReq = updatedReqs.find((r) => r.id === requestId);
+    if (updatedReq) syncRequestToSupabase(updatedReq);
 
-    // 3. Update or generate invoice with extra
     setInvoices((prev) =>
       prev.map((inv) => {
-        if (inv.clientId === req.clientId && inv.referenceMonth === 8) {
-          const newExtrasAmount = inv.extrasAmount + req.totalEstimated;
-          const newTotal = inv.baseAmount + newExtrasAmount;
-          return {
-            ...inv,
-            extrasAmount: newExtrasAmount,
-            totalAmount: newTotal,
-            items: [
-              ...inv.items,
-              {
-                description: `Serviço Extra Aprovado (${req.quantity}x ${req.serviceType})`,
-                quantity: req.quantity,
-                unitPrice: req.unitPrice,
-                total: req.totalEstimated,
-                isExtra: true,
-              },
-            ],
-          };
+        if (inv.clientId === req.clientId && inv.referenceMonth === new Date().getMonth() + 1) {
+          const updated = { ...inv, extrasAmount: inv.extrasAmount + req.totalEstimated, totalAmount: inv.baseAmount + inv.extrasAmount + req.totalEstimated };
+          syncInvoiceToSupabase(updated);
+          return updated;
         }
         return inv;
       })
     );
-
-    addToast({
-      title: 'Solicitação Aprovada!',
-      description: `Tarefa gerada no Kanban e R$ ${req.totalEstimated} adicionado ao faturamento do mês.`,
-      type: 'success',
-    });
+    addToast({ title: 'Solicitação Aprovada!', description: `R$ ${req.totalEstimated} adicionado ao faturamento do mês.`, type: 'success' });
   };
 
   const rejectServiceRequest = (requestId: string) => {
-    const updated = serviceRequests.map((r) =>
-      r.id === requestId ? { ...r, status: 'REJECTED' as const } : r
-    );
+    const updated = serviceRequests.map((r) => r.id === requestId ? { ...r, status: 'REJECTED' as const } : r);
     setServiceRequests(updated);
-    try {
-      localStorage.setItem('brutal_requests', JSON.stringify(updated));
-    } catch {}
-    addToast({
-      title: 'Solicitação Recusada',
-      type: 'info',
-    });
+    const rejected = updated.find((r) => r.id === requestId);
+    if (rejected) syncRequestToSupabase(rejected);
+    addToast({ title: 'Solicitação Recusada', type: 'info' });
   };
 
-  // Invoices
+  // ────────────────────────────────────────────────────────────
+  // INVOICES
+  // ────────────────────────────────────────────────────────────
   const markInvoiceAsPaid = (invoiceId: string) => {
-    const updated = invoices.map((inv) =>
-      inv.id === invoiceId
-        ? {
-            ...inv,
-            status: 'PAID' as const,
-            paidAt: new Date().toISOString().split('T')[0],
-          }
-        : inv
-    );
-    setInvoices(updated);
-    try {
-      localStorage.setItem('brutal_invoices', JSON.stringify(updated));
-    } catch {}
-
+    setInvoices((prev) => {
+      const updated = prev.map((inv) =>
+        inv.id === invoiceId ? { ...inv, status: 'PAID' as const, paidAt: new Date().toISOString().split('T')[0] } : inv
+      );
+      const modified = updated.find((i) => i.id === invoiceId);
+      if (modified) syncInvoiceToSupabase(modified);
+      return updated;
+    });
     const invoice = invoices.find((i) => i.id === invoiceId);
     if (invoice) {
-      const notif: NotificationItem = {
+      setNotifications((prev) => [{
         id: `notif-${Date.now()}`,
         title: 'Pagamento Confirmado',
-        message: `Fatura de ${invoice.clientName} no valor de R$ ${invoice.totalAmount} foi quitada via PIX.`,
+        message: `Fatura de ${invoice.clientName} (R$ ${invoice.totalAmount}) foi quitada.`,
         link: '/financeiro',
         type: 'PAYMENT',
         isRead: false,
         createdAt: 'Agora mesmo',
-      };
-      setNotifications((prev) => [notif, ...prev]);
+      }, ...prev]);
     }
-
-    addToast({
-      title: 'Pagamento Confirmado! 💸',
-      description: 'Fatura atualizada para PAGO com sucesso.',
-      type: 'success',
-    });
+    addToast({ title: 'Pagamento Confirmado! 💸', description: 'Fatura atualizada para PAGO.', type: 'success' });
   };
 
   const createInvoice = (invData: Omit<Invoice, 'id' | 'createdAt'>) => {
-    const newInv: Invoice = {
-      ...invData,
-      id: `inv-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
+    const newInv: Invoice = { ...invData, id: crypto.randomUUID(), createdAt: new Date().toISOString().split('T')[0] };
     setInvoices((prev) => [newInv, ...prev]);
-    addToast({
-      title: 'Fatura Gerada',
-      description: `Fatura de R$ ${newInv.totalAmount} emitida para ${newInv.clientName}.`,
-      type: 'success',
-    });
+    syncInvoiceToSupabase(newInv);
+    addToast({ title: 'Fatura Gerada', description: `Fatura de R$ ${newInv.totalAmount} emitida para ${newInv.clientName}.`, type: 'success' });
   };
 
-  // Notifications
-  const markNotificationAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-  };
-
-  const markAllNotificationsAsRead = () => {
+  // ────────────────────────────────────────────────────────────
+  // NOTIFICATIONS
+  // ────────────────────────────────────────────────────────────
+  const markNotificationAsRead = (id: string) =>
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  const markAllNotificationsAsRead = () =>
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
-
   const unreadNotificationCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <SystemStoreContext.Provider
       value={{
-        clients,
-        employees,
-        campaigns,
-        tasks,
-        calendarEvents,
-        serviceRequests,
-        invoices,
-        monthlyReports,
-        notifications,
-        unreadNotificationCount,
-        toasts,
-        addToast,
-        removeToast,
-        addClient,
-        updateClient,
-        deleteClient,
-        addEmployee,
-        updateEmployee,
-        addTask,
-        updateTask,
-        updateTaskStatus,
-        deleteTask,
-        addTaskComment,
-        addCampaign,
-        updateCampaign,
-        deleteCampaign,
-        addCalendarEvent,
-        updateCalendarEvent,
-        deleteCalendarEvent,
-        addServiceRequest,
-        approveServiceRequest,
-        rejectServiceRequest,
-        markInvoiceAsPaid,
-        createInvoice,
-        markNotificationAsRead,
-        markAllNotificationsAsRead,
-        adminWhatsApp,
-        updateAdminWhatsApp,
-        pixKey,
-        updatePixKey,
-        pixBeneficiary,
-        updatePixBeneficiary,
+        clients, employees, campaigns, tasks, calendarEvents,
+        serviceRequests, invoices, monthlyReports, notifications,
+        unreadNotificationCount, toasts, isLoadingData,
+        addToast, removeToast,
+        addClient, updateClient, deleteClient,
+        addEmployee, updateEmployee,
+        addTask, updateTask, updateTaskStatus, deleteTask, addTaskComment,
+        addCampaign, updateCampaign, deleteCampaign,
+        addCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
+        addServiceRequest, approveServiceRequest, rejectServiceRequest,
+        markInvoiceAsPaid, createInvoice,
+        markNotificationAsRead, markAllNotificationsAsRead,
+        adminWhatsApp, updateAdminWhatsApp,
+        pixKey, updatePixKey,
+        pixBeneficiary, updatePixBeneficiary,
       }}
     >
       {children}
@@ -702,8 +534,6 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
 
 export function useSystemStore() {
   const context = useContext(SystemStoreContext);
-  if (!context) {
-    throw new Error('useSystemStore must be used within a SystemStoreProvider');
-  }
+  if (!context) throw new Error('useSystemStore must be used within a SystemStoreProvider');
   return context;
 }

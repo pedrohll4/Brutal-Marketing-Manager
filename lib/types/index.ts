@@ -70,6 +70,7 @@ export interface Employee {
   assignedClientIds: string[];
   canManageFinance: boolean;
   canManageClients: boolean;
+  salary?: number;
   createdAt: string;
 }
 
