@@ -6,6 +6,7 @@ import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Modal } from '../ui/Modal';
 import { AICopyDrawer } from '../approvals/AICopyDrawer';
+import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
 import {
   Film,
   Camera,
@@ -497,15 +498,27 @@ export function TaskModal({
         )}
 
         {/* Footer Actions */}
-        <div className="flex justify-between items-center pt-4 border-t border-[#262626]">
+        <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-[#262626]">
           {taskToEdit ? (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="text-red-400 hover:text-red-300 text-xs font-mono flex items-center gap-1 p-1 rounded"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Excluir Tarefa
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="text-red-400 hover:text-red-300 text-xs font-mono flex items-center gap-1 p-1 rounded"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Excluir
+              </button>
+
+              <WhatsAppShareButton
+                trigger="MEDIA_READY_FOR_REVIEW"
+                data={{
+                  clientName: taskToEdit.clientName,
+                  taskTitle: taskToEdit.title,
+                  mediaType: taskToEdit.taskType === 'PHOTO' ? 'Fotos / Ensaio' : 'Vídeo 4K UHD',
+                }}
+                label="Avisar no WhatsApp"
+              />
+            </div>
           ) : (
             <div />
           )}

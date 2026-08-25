@@ -5,6 +5,7 @@ import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { formatCurrency } from '@/lib/utils';
 import { Check, X, Clock, Sparkles, Filter, Plus, Calendar, Film, Image as ImageIcon } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { WhatsAppShareButton } from '@/components/automations/WhatsAppShareButton';
 
 export default function SolicitacoesPage() {
   const { clients, serviceRequests, approveServiceRequest, rejectServiceRequest, addServiceRequest } =
@@ -207,9 +208,22 @@ export default function SolicitacoesPage() {
                 )}
 
                 {isApproved && (
-                  <span className="text-[11px] font-mono text-emerald-400 font-semibold flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Adicionado ao Kanban
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-emerald-400 font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> No Kanban
+                    </span>
+
+                    <WhatsAppShareButton
+                      trigger="EXTRA_SERVICE_APPROVED"
+                      data={{
+                        clientName: req.clientName,
+                        serviceType: req.serviceType,
+                        quantity: req.quantity,
+                      }}
+                      label="Avisar Cliente"
+                      variant="green"
+                    />
+                  </div>
                 )}
               </div>
             </div>

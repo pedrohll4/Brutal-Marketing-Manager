@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { getEmbeddableMediaUrl } from '@/lib/utils';
 import { Modal } from '../ui/Modal';
 import { AICopyDrawer } from './AICopyDrawer';
+import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
 import {
   Film,
   Camera,
@@ -503,7 +504,18 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
             Fechar sem Alterar
           </button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <WhatsAppShareButton
+              trigger="MEDIA_READY_FOR_REVIEW"
+              data={{
+                clientName: task.clientName,
+                taskTitle: task.title,
+                mediaType: task.taskType === 'PHOTO' ? 'Fotos / Ensaio' : 'Vídeo 4K UHD',
+              }}
+              label="Compartilhar no WhatsApp"
+              variant="green"
+            />
+
             <button
               type="button"
               onClick={handleRequestAdjustments}

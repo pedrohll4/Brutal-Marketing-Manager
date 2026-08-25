@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Invoice } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { Modal } from '../ui/Modal';
+import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
 import { Copy, Check, QrCode, Sparkles, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -103,16 +104,30 @@ export function PixPaymentModal({ isOpen, onClose, invoice }: PixPaymentModalPro
 
         {/* Simulation / Confirmation button */}
         <div className="pt-3 border-t border-[#262626] flex flex-col gap-2">
+          <WhatsAppShareButton
+            trigger="INVOICE_BILLING_PIX"
+            data={{
+              clientName: invoice.clientName,
+              totalAmount: invoice.totalAmount,
+              baseAmount: invoice.baseAmount,
+              extrasAmount: invoice.extrasAmount,
+              dueDay: new Date(invoice.dueDate).getDate(),
+              pixPayload: invoice.pixPayload,
+            }}
+            label="💬 Enviar Fatura & Código PIX no WhatsApp do Cliente"
+            className="w-full justify-center py-2.5"
+          />
+
           {invoice.status !== 'PAID' ? (
             <button
               onClick={handleConfirmManualPayment}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-all shadow"
+              className="w-full bg-[#181818] hover:bg-emerald-600 border border-emerald-600/40 text-emerald-400 hover:text-white font-bold text-xs py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-all shadow"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Confirmar Recebimento (Simular Baixa PIX)</span>
             </button>
           ) : (
-            <div className="p-2.5 rounded bg-emerald-950/40 border border-emerald-800/40 text-emerald-400 text-xs font-mono font-bold">
+            <div className="p-2.5 rounded bg-emerald-950/40 border border-emerald-800/40 text-emerald-400 text-xs font-mono font-bold text-center">
               ✓ Fatura PAGA e confirmada no sistema
             </div>
           )}

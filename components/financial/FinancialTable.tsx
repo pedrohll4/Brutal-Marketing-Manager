@@ -5,6 +5,7 @@ import { Invoice, InvoiceStatus } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PixPaymentModal } from './PixPaymentModal';
+import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
 import { QrCode, CheckCircle2, AlertCircle, Clock, XCircle, Search, Filter } from 'lucide-react';
 
 export function FinancialTable() {
@@ -141,13 +142,28 @@ export function FinancialTable() {
                       {getStatusBadge(inv.status)}
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <button
-                        onClick={() => setSelectedInvoiceForPix(inv)}
-                        className="bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/30 px-3 py-1.5 rounded font-mono text-xs flex items-center gap-1.5 mx-auto transition-all shadow-sm"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        <span>PIX</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedInvoiceForPix(inv)}
+                          className="bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/30 px-2.5 py-1.5 rounded font-mono text-xs flex items-center gap-1 transition-all shadow-sm"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>PIX</span>
+                        </button>
+
+                        <WhatsAppShareButton
+                          trigger="INVOICE_BILLING_PIX"
+                          data={{
+                            clientName: inv.clientName,
+                            totalAmount: inv.totalAmount,
+                            baseAmount: inv.baseAmount,
+                            extrasAmount: inv.extrasAmount,
+                            dueDay: new Date(inv.dueDate).getDate(),
+                            pixPayload: inv.pixPayload,
+                          }}
+                          variant="icon"
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
