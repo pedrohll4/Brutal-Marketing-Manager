@@ -15,6 +15,8 @@ export const mockProfiles: UserProfile[] = [
   {
     id: "usr-admin-1",
     email: "admin@brutalmarketing.com.br",
+    username: "admin",
+    password: "admin123",
     fullName: "Lucas Antunes",
     role: "OWNER",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
@@ -23,6 +25,8 @@ export const mockProfiles: UserProfile[] = [
   {
     id: "usr-emp-1",
     email: "joao.editor@brutalmarketing.com.br",
+    username: "joao.silva",
+    password: "joao123",
     fullName: "João Silva",
     role: "EMPLOYEE",
     avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
@@ -32,6 +36,8 @@ export const mockProfiles: UserProfile[] = [
   {
     id: "usr-emp-2",
     email: "mariana.creative@brutalmarketing.com.br",
+    username: "mariana.costa",
+    password: "mariana123",
     fullName: "Mariana Costa",
     role: "EMPLOYEE",
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
@@ -41,6 +47,8 @@ export const mockProfiles: UserProfile[] = [
   {
     id: "usr-client-1",
     email: "nicole@procampo.com.br",
+    username: "nicole.procampo",
+    password: "procampo123",
     fullName: "Nicole Procampo",
     role: "CLIENT",
     avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",

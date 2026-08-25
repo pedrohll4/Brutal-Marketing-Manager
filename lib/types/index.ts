@@ -1,8 +1,23 @@
 export type UserRole = 'OWNER' | 'ADMIN' | 'EMPLOYEE' | 'CLIENT';
 
+export interface UserAccount {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  role: UserRole;
+  clientId?: string;
+  employeeId?: string;
+  avatarUrl?: string;
+  createdAt: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
+  username?: string;
+  password?: string;
   fullName: string;
   role: UserRole;
   avatarUrl?: string;
@@ -19,6 +34,8 @@ export interface Client {
   name: string;
   companyName: string;
   email: string;
+  username?: string;
+  password?: string;
   phone: string;
   document: string; // CPF or CNPJ
   segment: string;
@@ -43,6 +60,8 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
+  username?: string;
+  password?: string;
   phone: string;
   avatarUrl?: string;
   roleTitle: string;
