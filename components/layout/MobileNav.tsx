@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import { SideNavBar } from './SideNavBar';
-import { RoleSwitcher } from './RoleSwitcher';
 
 interface MobileNavProps {
   isMobileMenuOpen: boolean;
@@ -60,9 +59,6 @@ export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProp
               >
                 <X className="w-5 h-5" />
               </button>
-            </div>
-            <div className="mb-4">
-              <RoleSwitcher />
             </div>
             <div className="flex-1 overflow-y-auto">
               <SideNavBar className="relative w-full h-auto border-none p-0" onItemClick={onCloseMobileMenu} />

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
-import { useAuth } from '@/lib/context/AuthContext';
 import {
   Search,
   Users,
@@ -22,7 +21,6 @@ import {
 export function CommandPalette() {
   const router = useRouter();
   const { clients, tasks, campaigns } = useSystemStore();
-  const { switchUserRole } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -107,26 +105,20 @@ export function CommandPalette() {
       action: () => router.push('/financeiro'),
     },
     {
-      id: 'act-switch-admin',
-      category: 'Simulação de Perfil',
-      title: 'Alternar para Admin (Lucas Antunes)',
-      subtitle: 'Acesso total de gestão e faturamento',
+      id: 'act-settings',
+      category: 'Configurações',
+      title: 'Minha Conta & Segurança',
+      subtitle: 'Alterar senha e dados do perfil',
       icon: <ShieldCheck className="w-4 h-4 text-primary" />,
-      action: () => {
-        switchUserRole('OWNER');
-        router.push('/');
-      },
+      action: () => router.push('/configuracoes'),
     },
     {
-      id: 'act-switch-client',
-      category: 'Simulação de Perfil',
-      title: 'Alternar para Cliente (Nicole Procampo)',
-      subtitle: 'Portal do cliente com visualização de cotas e extras',
-      icon: <UserCheck className="w-4 h-4 text-primary" />,
-      action: () => {
-        switchUserRole('CLIENT');
-        router.push('/portal-cliente');
-      },
+      id: 'act-reports',
+      category: 'Navegação',
+      title: 'Gerador de Relatórios Mensais',
+      subtitle: 'Relatórios de entregas e financeiro para WhatsApp/PDF',
+      icon: <Megaphone className="w-4 h-4 text-emerald-400" />,
+      action: () => router.push('/relatorios'),
     },
   ];
 

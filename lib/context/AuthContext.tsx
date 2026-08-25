@@ -5,7 +5,7 @@ import { UserProfile, UserRole, UserAccount } from '../types';
 import { mockProfiles } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 
-const INITIAL_USER_ACCOUNTS: UserAccount[] = [
+export const INITIAL_USER_ACCOUNTS: UserAccount[] = [
   {
     id: 'usr-admin-1',
     username: 'admin',
@@ -53,18 +53,17 @@ const INITIAL_USER_ACCOUNTS: UserAccount[] = [
 
 interface AuthContextType {
   user: UserProfile | null;
-  role: UserRole;
+  role: UserRole | null;
   isClient: boolean;
   isAdmin: boolean;
   isOwner: boolean;
   isEmployee: boolean;
+  isLoading: boolean;
   activeClientId?: string;
   login: (identifier: string, pass: string) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
   logout: () => Promise<void>;
   registerUserAccount: (account: Omit<UserAccount, 'id' | 'createdAt'>) => UserAccount;
   changePassword: (newPass: string) => boolean;
-  switchUserRole: (newRole: UserRole, targetId?: string) => void;
-  availableProfiles: UserProfile[];
   userAccounts: UserAccount[];
 }
 
@@ -72,7 +71,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(INITIAL_USER_ACCOUNTS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(mockProfiles[0]);
+  // STRICT: starts as null, only set if active session exists
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Load registered accounts and active session from localStorage on start
   useEffect(() => {
@@ -81,19 +82,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (savedAccounts) {
         const parsed = JSON.parse(savedAccounts);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setUserAccounts(parsed);
+          // Merge initial and custom accounts avoiding duplicates
+          const merged = [...INITIAL_USER_ACCOUNTS];
+          parsed.forEach((pAcc) => {
+            const idx = merged.findIndex((m) => m.id === pAcc.id || m.email === pAcc.email);
+            if (idx >= 0) {
+              merged[idx] = pAcc;
+            } else {
+              merged.push(pAcc);
+            }
+          });
+          setUserAccounts(merged);
         }
       }
 
       const savedSession = localStorage.getItem('brutal_current_session');
       if (savedSession) {
         const parsedUser = JSON.parse(savedSession);
-        if (parsedUser && parsedUser.id) {
+        if (parsedUser && parsedUser.id && parsedUser.role) {
           setCurrentUser(parsedUser);
         }
       }
     } catch {
       // ignore
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -117,36 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    // If Supabase is active, check session
-    const client = supabase;
-    if (isSupabaseConfigured && client) {
-      client.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          client
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                saveSession({
-                  id: data.id,
-                  email: data.email,
-                  username: data.username || data.email.split('@')[0],
-                  fullName: data.full_name,
-                  role: data.role,
-                  avatarUrl: data.avatar_url,
-                  phone: data.phone,
-                });
-              }
-            });
-        }
-      });
-    }
-  }, []);
-
-  // Universal Login (Accepts E-mail OU Username)
+  // Strict Login (Accepts E-mail OU Username with Password Verification)
   const login = async (
     identifier: string,
     pass: string
@@ -155,10 +139,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const cleanPass = pass.trim();
 
     if (!cleanId || !cleanPass) {
-      return { success: false, error: 'Informe seu e-mail/usuário e senha.' };
+      return { success: false, error: 'Por favor, informe seu e-mail/usuário e senha.' };
     }
 
-    // 1. Search in userAccounts
+    // 1. Search in userAccounts (registered and initial)
     const found = userAccounts.find(
       (acc) =>
         acc.email.toLowerCase() === cleanId ||
@@ -166,9 +150,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (found) {
-      // Validate password
+      // Validate password strictly
       if (found.password && found.password !== cleanPass) {
-        return { success: false, error: 'Senha incorreta. Verifique suas credenciais.' };
+        return { success: false, error: 'Senha incorreta. Verifique os dados digitados.' };
       }
 
       const userProfile: UserProfile = {
@@ -177,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: found.username,
         fullName: found.fullName,
         role: found.role,
-        avatarUrl: found.avatarUrl || mockProfiles[0].avatarUrl,
+        avatarUrl: found.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         clientId: found.clientId,
         employeeId: found.employeeId,
       };
@@ -186,38 +170,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true, role: found.role };
     }
 
-    // 2. Search in mockProfiles fallback
-    const mockFound = mockProfiles.find(
-      (p) =>
-        p.email.toLowerCase() === cleanId ||
-        (p.username && p.username.toLowerCase() === cleanId)
-    );
+    // 2. Check Supabase profiles if configured
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: dbProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`email.eq.${cleanId},username.eq.${cleanId}`)
+          .single();
 
-    if (mockFound) {
-      if (mockFound.password && mockFound.password !== cleanPass) {
-        return { success: false, error: 'Senha incorreta.' };
+        if (dbProfile) {
+          if (dbProfile.initial_password && dbProfile.initial_password !== cleanPass) {
+            return { success: false, error: 'Senha incorreta.' };
+          }
+
+          const userProfile: UserProfile = {
+            id: dbProfile.id,
+            email: dbProfile.email,
+            username: dbProfile.username || dbProfile.email.split('@')[0],
+            fullName: dbProfile.full_name,
+            role: dbProfile.role,
+            avatarUrl: dbProfile.avatar_url,
+            clientId: dbProfile.client_id,
+            employeeId: dbProfile.employee_id,
+          };
+
+          saveSession(userProfile);
+          return { success: true, role: dbProfile.role };
+        }
+      } catch (err) {
+        // continue
       }
-      saveSession(mockFound);
-      return { success: true, role: mockFound.role };
     }
 
-    // 3. If dynamic login (demo mode)
-    const isClientGuess = cleanId.includes('cliente') || cleanId.includes('procampo');
-    const isEmpGuess = cleanId.includes('editor') || cleanId.includes('joao') || cleanId.includes('funcionario');
-    const assignedRole: UserRole = isClientGuess ? 'CLIENT' : isEmpGuess ? 'EMPLOYEE' : 'OWNER';
-
-    const customProfile: UserProfile = {
-      id: `usr-${Date.now()}`,
-      email: cleanId.includes('@') ? cleanId : `${cleanId}@brutalmarketing.com.br`,
-      username: cleanId.includes('@') ? cleanId.split('@')[0] : cleanId,
-      fullName: cleanId.split('@')[0].toUpperCase(),
-      role: assignedRole,
-      clientId: isClientGuess ? 'cli-procampo' : undefined,
-      avatarUrl: mockProfiles[0].avatarUrl,
+    // Strict rejection if user does not exist
+    return {
+      success: false,
+      error: 'Usuário ou e-mail não encontrado. Solicite acesso ao Administrador.',
     };
-
-    saveSession(customProfile);
-    return { success: true, role: assignedRole };
   };
 
   // Register New User (by Supreme Admin)
@@ -228,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString().split('T')[0],
     };
 
-    const updated = [...userAccounts, newAccount];
+    const updated = [newAccount, ...userAccounts];
     saveAccounts(updated);
     return newAccount;
   };
@@ -252,34 +242,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('brutal_current_session');
       if (isSupabaseConfigured && supabase) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut().catch(() => {});
       }
     } catch {
       // ignore
     }
-    // Redirect to login page
+    setCurrentUser(null);
     window.location.href = '/login';
   };
 
-  const switchUserRole = (newRole: UserRole, targetId?: string) => {
-    const target = mockProfiles.find((p) => p.role === newRole) || mockProfiles[0];
-    if (newRole === 'CLIENT') {
-      const clientProfile = mockProfiles.find((p) => p.role === 'CLIENT');
-      if (clientProfile) {
-        const clientUser = { ...clientProfile, clientId: targetId || 'cli-procampo' };
-        saveSession(clientUser);
-        return;
-      }
-    }
-    saveSession(target);
-  };
-
-  const role = currentUser?.role || 'OWNER';
+  const role = currentUser?.role || null;
   const isOwner = role === 'OWNER';
   const isAdmin = role === 'ADMIN' || isOwner;
   const isEmployee = role === 'EMPLOYEE';
   const isClient = role === 'CLIENT';
-  const activeClientId = currentUser?.clientId || (isClient ? 'cli-procampo' : undefined);
+  const activeClientId = currentUser?.clientId || undefined;
 
   return (
     <AuthContext.Provider
@@ -290,13 +267,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         isOwner,
         isEmployee,
+        isLoading,
         activeClientId,
         login,
         logout,
         registerUserAccount,
         changePassword,
-        switchUserRole,
-        availableProfiles: mockProfiles,
         userAccounts,
       }}
     >
