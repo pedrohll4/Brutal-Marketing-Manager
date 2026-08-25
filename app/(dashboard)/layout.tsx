@@ -5,6 +5,8 @@ import { SideNavBar } from '@/components/layout/SideNavBar';
 import { TopNavBar } from '@/components/layout/TopNavBar';
 import { MobileNav } from '@/components/layout/MobileNav';
 
+import { PendingRequestsAlertBar } from '@/components/notifications/PendingRequestsAlertBar';
+
 export default function DashboardLayout({
   children,
 }: {
@@ -22,6 +24,7 @@ export default function DashboardLayout({
         <TopNavBar onToggleMobileMenu={() => setIsMobileMenuOpen(true)} />
 
         <main className="flex-1 pt-24 px-4 md:px-8 pb-20 md:pb-12 max-w-container-max w-full mx-auto">
+          <PendingRequestsAlertBar />
           {children}
         </main>
       </div>

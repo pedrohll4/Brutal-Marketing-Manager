@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/context/AuthContext';
+import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import {
   LayoutDashboard,
   Users,
@@ -28,7 +29,10 @@ interface SideNavBarProps {
 export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
   const pathname = usePathname();
   const { isClient, isEmployee } = useAuth();
+  const { serviceRequests } = useSystemStore();
   const [isAICampaignModalOpen, setIsAICampaignModalOpen] = useState(false);
+
+  const pendingRequestsCount = serviceRequests.filter((r) => r.status === 'PENDING').length;
 
   // Nav Items definition
   const adminNavItems = [
@@ -107,14 +111,22 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={onItemClick}
-                className={`flex items-center gap-3 px-6 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all relative ${
+                className={`flex items-center justify-between px-6 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all relative ${
                   isActive
                     ? 'text-primary bg-primary/10 border-r-2 border-primary font-bold'
                     : 'text-on-surface-variant hover:text-on-surface hover:bg-[#1a1a1a]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-on-surface-variant'}`} />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-on-surface-variant'}`} />
+                  <span>{item.label}</span>
+                </div>
+
+                {!isClient && item.href === '/solicitacoes' && pendingRequestsCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-mono font-black animate-pulse shadow-sm">
+                    {pendingRequestsCount}
+                  </span>
+                )}
               </Link>
             );
           })}
