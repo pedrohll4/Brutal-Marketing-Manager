@@ -1,0 +1,48 @@
+{
+  "name": "Brutal Marketing Manager",
+  "short_name": "Brutal Manager",
+  "description": "Sistema de Gestão Audiovisual, Aprovação de Conteúdos e Campanhas da Brutal Marketing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131313",
+  "theme_color": "#FF5500",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Portal do Cliente",
+      "short_name": "Portal",
+      "description": "Acesse suas entregas, vídeos e faturas",
+      "url": "/portal-cliente",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Esteira de Produção",
+      "short_name": "Produção",
+      "description": "Kanban de produção de vídeos e fotos",
+      "url": "/producao",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

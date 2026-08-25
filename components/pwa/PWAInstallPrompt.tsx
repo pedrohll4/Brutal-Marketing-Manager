@@ -1,0 +1,192 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Download, X, Smartphone, Share, PlusSquare, Check } from 'lucide-react';
+import Image from 'next/image';
+
+export function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+
+  useEffect(() => {
+    // Check if running in standalone mode (already installed)
+    const isRunningStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+
+    setIsStandalone(isRunningStandalone);
+
+    if (isRunningStandalone) return;
+
+    // Check if device is iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(isIosDevice);
+
+    // Capture standard install prompt on Android/Desktop
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Check if user dismissed recently
+      const dismissedTime = localStorage.getItem('brutal_pwa_dismissed');
+      if (!dismissedTime || Date.now() - Number(dismissedTime) > 24 * 60 * 60 * 1000) {
+        setShowPrompt(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // For iOS, show after 3 seconds if not dismissed
+    if (isIosDevice && !isRunningStandalone) {
+      const dismissedTime = localStorage.getItem('brutal_pwa_dismissed');
+      if (!dismissedTime || Date.now() - Number(dismissedTime) > 24 * 60 * 60 * 1000) {
+        const timer = setTimeout(() => setShowPrompt(true), 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      setShowIOSModal(true);
+      return;
+    }
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowPrompt(false);
+      }
+      setDeferredPrompt(null);
+    }
+  };
+
+  const handleDismiss = () => {
+    localStorage.setItem('brutal_pwa_dismissed', String(Date.now()));
+    setShowPrompt(false);
+  };
+
+  // Register Service Worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
+        .catch((err) => console.warn('PWA SW registration failed:', err));
+    }
+  }, []);
+
+  if (isStandalone || !showPrompt) return null;
+
+  return (
+    <>
+      {/* Floating Bottom Install Banner */}
+      <aside
+        aria-label="Instalação do Aplicativo Mobile"
+        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-[#181818] border-2 border-primary/60 rounded-xl p-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_20px_rgba(255,85,0,0.25)] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300"
+      >
+        <div className="flex items-center gap-3">
+          {/* App Icon */}
+          <div className="w-11 h-11 rounded-xl bg-[#121212] border border-primary/40 flex items-center justify-center shrink-0 shadow-md">
+            <span className="font-black text-primary text-lg">B</span>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-bold text-on-surface font-mono flex items-center gap-1.5">
+              <span>App Brutal Manager</span>
+              <span className="text-[9px] bg-primary text-white font-bold px-1.5 py-0.2 rounded">
+                MOBILE
+              </span>
+            </h4>
+            <p className="text-[11px] text-on-surface-variant font-sans line-clamp-1 mt-0.5">
+              Instale na tela de início para aprovar vídeos e acessar faturas
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={handleInstallClick}
+            className="px-3 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-mono font-bold rounded-lg flex items-center gap-1.5 shadow transition-all active:scale-95"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Instalar</span>
+          </button>
+
+          <button
+            onClick={handleDismiss}
+            className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
+            title="Fechar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
+
+      {/* iOS Installation Instruction Modal */}
+      {showIOSModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="bg-[#181818] border border-primary/50 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-xs font-mono">
+            <div className="flex justify-between items-center border-b border-[#262626] pb-3">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-on-surface text-sm">Instalar no iPhone / iPad</h3>
+              </div>
+              <button
+                onClick={() => setShowIOSModal(false)}
+                className="text-on-surface-variant hover:text-on-surface"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-on-surface-variant text-[11px] font-sans">
+              Para usar o Brutal Manager em tela cheia como um aplicativo no seu iPhone:
+            </p>
+
+            <div className="space-y-3 bg-[#121212] p-3.5 rounded-xl border border-[#262626]">
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-primary/20 text-primary rounded-lg shrink-0 mt-0.5">
+                  <Share className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-on-surface text-xs font-bold">1. Toque no botão Compartilhar</strong>
+                  <span className="text-[10px] text-on-surface-variant">
+                    Na barra inferior do navegador Safari do seu iPhone.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-primary/20 text-primary rounded-lg shrink-0 mt-0.5">
+                  <PlusSquare className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="block text-on-surface text-xs font-bold">2. Escolha &quot;Adicionar à Tela de Início&quot;</strong>
+                  <span className="text-[10px] text-on-surface-variant">
+                    Role as opções e toque em &quot;Adicionar à Tela de Início&quot;.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="w-full py-2.5 bg-primary text-white font-bold rounded-lg text-xs"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
