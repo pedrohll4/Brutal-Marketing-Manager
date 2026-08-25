@@ -52,7 +52,7 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- 3. TABELA DE PERFIS DE USUÁRIO (Vinculado ao auth.users e login por e-mail/username)
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     username TEXT UNIQUE,
     password_hash TEXT,
@@ -67,7 +67,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Garantir colunas se tabela já existir
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS initial_password TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS client_id UUID;
@@ -264,7 +263,6 @@ ALTER TABLE public.service_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 
--- Políticas de Leitura Pública/Autenticada (Permite visualização operacional com isolamento)
 DO $$ BEGIN
     CREATE POLICY "Acesso Total para Administradores e Donos" ON public.profiles FOR ALL USING (true);
 EXCEPTION WHEN duplicate_object THEN null; END $$;
