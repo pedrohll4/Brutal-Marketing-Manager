@@ -51,7 +51,7 @@ export function WhatsAppNotificationModal({
       clientName,
       taskTitle: task.title,
       mediaType: task.taskType === 'PHOTO' ? 'Fotos / Ensaio' : 'Vídeo em Alta Resolução',
-      portalUrl: 'https://brutalmanager.vercel.app/portal-cliente/entregas',
+      portalUrl: 'https://brutal-marketing-manager.vercel.app/portal-cliente/entregas',
     });
   } else if (newStatus === 'APPROVED') {
     customMessage = `Olá, *${clientName}*.
@@ -59,7 +59,7 @@ export function WhatsAppNotificationModal({
 Confirmamos que o seu conteúdo *"${task.title}"* foi aprovado e agendado para publicação oficial pela equipe da Brutal Marketing.
 
 Acompanhe as entregas e estratégias diretamente em seu portal:
-https://brutalmanager.vercel.app/portal-cliente/entregas
+https://brutal-marketing-manager.vercel.app/portal-cliente/entregas
 
 Atenciosamente,
 Brutal Marketing`.trim();
@@ -71,7 +71,7 @@ Informamos uma atualização no andamento da sua produção na Brutal Marketing:
 O conteúdo *"${task.title}"* avançou para a etapa: *${STATUS_LABELS[newStatus] || newStatus}*.
 
 Acompanhe o andamento pelo portal do cliente:
-https://brutalmanager.vercel.app/portal-cliente
+https://brutal-marketing-manager.vercel.app/portal-cliente
 
 Atenciosamente,
 Brutal Marketing`.trim();

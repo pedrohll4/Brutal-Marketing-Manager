@@ -143,7 +143,7 @@ export function ClientModal({
   };
 
   const handleCopyWelcomeMessage = () => {
-    const loginUrl = 'https://brutalmanager.vercel.app/login';
+    const loginUrl = 'https://brutal-marketing-manager.vercel.app/login';
     const msg = `Prezado(a) *${formData.name || formData.companyName}*,
 
 Sua conta de acesso ao portal da Brutal Marketing foi configurada com sucesso pelo nosso Administrador.

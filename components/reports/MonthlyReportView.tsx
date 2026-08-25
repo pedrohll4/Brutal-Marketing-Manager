@@ -52,7 +52,7 @@ Segue o Relatório Mensal de Produção & Performance referente a *${selectedMon
 • Investimento Consolidado: *${formatCurrency(totalReportAmount)}* (Plano Base: ${formatCurrency(baseMonthlyFee)}${extrasCost > 0 ? ` + Extras: ${formatCurrency(extrasCost)}` : ''})
 
 Para visualizar o relatório executivo completo, aprovar conteúdos e baixar as mídias em alta resolução:
-https://brutalmanager.vercel.app/portal-cliente/entregas
+https://brutal-marketing-manager.vercel.app/portal-cliente/entregas
 
 Atenciosamente,
 Brutal Marketing`.trim();

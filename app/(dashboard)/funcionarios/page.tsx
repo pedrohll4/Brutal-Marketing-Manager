@@ -55,7 +55,7 @@ export default function FuncionariosPage() {
   };
 
   const handleCopyStaffCredentials = () => {
-    const loginUrl = 'https://brutalmanager.vercel.app/login';
+    const loginUrl = 'https://brutal-marketing-manager.vercel.app/login';
     const msg = `Olá, *${form.name}*! 👋
 
 Seu acesso ao *Brutal Marketing Manager* foi criado pelo Administrador.

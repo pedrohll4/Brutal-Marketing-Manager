@@ -46,7 +46,7 @@ export interface WhatsAppTemplateData {
 }
 
 export function buildWhatsAppMessage(trigger: NotificationTriggerType, data: WhatsAppTemplateData): string {
-  const portalBase = 'https://brutalmanager.vercel.app/portal-cliente';
+  const portalBase = 'https://brutal-marketing-manager.vercel.app/portal-cliente';
 
   switch (trigger) {
     case 'MEDIA_READY_FOR_REVIEW':
@@ -68,7 +68,7 @@ Serviço: ${data.quantity || 1}x ${data.serviceType}
 Valor Previsto: ${formatCurrency(data.totalAmount || 0)}
 ${data.desiredDate ? `Data Prevista: ${data.desiredDate}\n` : ''}${data.eventLocation ? `Local do Evento: ${data.eventLocation}\n` : ''}
 Para analisar e aprovar esta solicitação no sistema:
-https://brutalmanager.vercel.app/solicitacoes`.trim();
+https://brutal-marketing-manager.vercel.app/solicitacoes`.trim();
 
     case 'EXTRA_SERVICE_APPROVED':
       return `Olá, *${data.clientName}*.
@@ -109,7 +109,7 @@ Detalhes dos ajustes solicitados:
 ${data.requestedChanges || 'Verifique os comentários com marcações de timestamp no portal.'}
 
 Acesse a esteira de produção para revisar as alterações:
-https://brutalmanager.vercel.app/producao`.trim();
+https://brutal-marketing-manager.vercel.app/producao`.trim();
 
     default:
       return '';
