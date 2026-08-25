@@ -71,11 +71,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Accounts stored in state and localStorage
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(INITIAL_USER_ACCOUNTS);
   const [currentUser, setCurrentUser] = useState<UserProfile>(mockProfiles[0]);
 
-  // Load registered accounts from localStorage on start
+  // Load registered accounts and active session from localStorage on start
   useEffect(() => {
     try {
       const savedAccounts = localStorage.getItem('brutal_user_accounts');
@@ -85,16 +84,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUserAccounts(parsed);
         }
       }
+
+      const savedSession = localStorage.getItem('brutal_current_session');
+      if (savedSession) {
+        const parsedUser = JSON.parse(savedSession);
+        if (parsedUser && parsedUser.id) {
+          setCurrentUser(parsedUser);
+        }
+      }
     } catch {
       // ignore
     }
   }, []);
 
-  // Save to localStorage when accounts change
+  // Save accounts to localStorage
   const saveAccounts = (newAccounts: UserAccount[]) => {
     setUserAccounts(newAccounts);
     try {
       localStorage.setItem('brutal_user_accounts', JSON.stringify(newAccounts));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Save session to localStorage
+  const saveSession = (userProfile: UserProfile) => {
+    setCurrentUser(userProfile);
+    try {
+      localStorage.setItem('brutal_current_session', JSON.stringify(userProfile));
     } catch {
       // ignore
     }
@@ -113,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single()
             .then(({ data }) => {
               if (data) {
-                setCurrentUser({
+                saveSession({
                   id: data.id,
                   email: data.email,
                   username: data.username || data.email.split('@')[0],
@@ -149,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (found) {
-      // Validate password (if password matches)
+      // Validate password
       if (found.password && found.password !== cleanPass) {
         return { success: false, error: 'Senha incorreta. Verifique suas credenciais.' };
       }
@@ -160,12 +177,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: found.username,
         fullName: found.fullName,
         role: found.role,
-        avatarUrl: found.avatarUrl,
+        avatarUrl: found.avatarUrl || mockProfiles[0].avatarUrl,
         clientId: found.clientId,
         employeeId: found.employeeId,
       };
 
-      setCurrentUser(userProfile);
+      saveSession(userProfile);
       return { success: true, role: found.role };
     }
 
@@ -177,7 +194,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (mockFound) {
-      setCurrentUser(mockFound);
+      if (mockFound.password && mockFound.password !== cleanPass) {
+        return { success: false, error: 'Senha incorreta.' };
+      }
+      saveSession(mockFound);
       return { success: true, role: mockFound.role };
     }
 
@@ -196,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       avatarUrl: mockProfiles[0].avatarUrl,
     };
 
-    setCurrentUser(customProfile);
+    saveSession(customProfile);
     return { success: true, role: assignedRole };
   };
 
@@ -223,16 +243,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return acc;
     });
     saveAccounts(updated);
-    setCurrentUser({ ...currentUser, password: newPass.trim() });
+    const updatedUser = { ...currentUser, password: newPass.trim() };
+    saveSession(updatedUser);
     return true;
   };
 
   const logout = async () => {
-    if (isSupabaseConfigured && supabase) {
-      await supabase.auth.signOut();
+    try {
+      localStorage.removeItem('brutal_current_session');
+      if (isSupabaseConfigured && supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch {
+      // ignore
     }
-    // Reset to admin or login view
-    setCurrentUser(mockProfiles[0]);
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   const switchUserRole = (newRole: UserRole, targetId?: string) => {
@@ -240,19 +266,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (newRole === 'CLIENT') {
       const clientProfile = mockProfiles.find((p) => p.role === 'CLIENT');
       if (clientProfile) {
-        setCurrentUser({ ...clientProfile, clientId: targetId || 'cli-procampo' });
+        const clientUser = { ...clientProfile, clientId: targetId || 'cli-procampo' };
+        saveSession(clientUser);
         return;
       }
     }
-    setCurrentUser(target);
+    saveSession(target);
   };
 
-  const role = currentUser.role;
+  const role = currentUser?.role || 'OWNER';
   const isOwner = role === 'OWNER';
   const isAdmin = role === 'ADMIN' || isOwner;
   const isEmployee = role === 'EMPLOYEE';
   const isClient = role === 'CLIENT';
-  const activeClientId = currentUser.clientId || (isClient ? 'cli-procampo' : undefined);
+  const activeClientId = currentUser?.clientId || (isClient ? 'cli-procampo' : undefined);
 
   return (
     <AuthContext.Provider

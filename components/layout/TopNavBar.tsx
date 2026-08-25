@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
-import { RoleSwitcher } from './RoleSwitcher';
-import { Search, Bell, LogOut, CheckCheck, ExternalLink, Menu, Command } from 'lucide-react';
+import { Search, Bell, LogOut, CheckCheck, ExternalLink, Menu, Command, User, KeyRound, ChevronDown, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopNavBarProps {
@@ -12,16 +11,22 @@ interface TopNavBarProps {
 }
 
 export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, role, isClient } = useAuth();
   const { notifications, unreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead } = useSystemStore();
   const [showNotifications, setShowNotifications] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
-  // Close notifications on click outside
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+
+  // Close popovers on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setShowUserDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -30,6 +35,28 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
 
   const handleOpenCommandPalette = () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+  };
+
+  const getRoleBadge = () => {
+    if (role === 'OWNER' || role === 'ADMIN') {
+      return (
+        <span className="text-[9px] font-mono font-bold bg-primary/20 text-primary border border-primary/40 px-2 py-0.5 rounded-full uppercase">
+          👑 Admin Supremo
+        </span>
+      );
+    }
+    if (role === 'CLIENT') {
+      return (
+        <span className="text-[9px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-700/50 px-2 py-0.5 rounded-full uppercase">
+          🌾 Portal do Cliente
+        </span>
+      );
+    }
+    return (
+      <span className="text-[9px] font-mono font-bold bg-blue-950/60 text-blue-400 border border-blue-700/50 px-2 py-0.5 rounded-full uppercase">
+        🎬 Equipe / Staff
+      </span>
+    );
   };
 
   return (
@@ -59,13 +86,8 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
         </button>
       </div>
 
-      {/* Center/Right: Role Switcher & Actions */}
-      <div className="flex items-center gap-3 sm:gap-5">
-        {/* Role Switcher for instant demo */}
-        <div className="hidden sm:block">
-          <RoleSwitcher />
-        </div>
-
+      {/* Right Actions */}
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Notifications Popover */}
         <div className="relative" ref={notifRef}>
           <button
@@ -141,18 +163,12 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
           )}
         </div>
 
-        {/* User Badge */}
-        <div className="flex items-center gap-3 pl-3 sm:pl-4 border-l border-[#262626]">
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-sm font-semibold text-on-surface">
-              {user?.fullName || 'Lucas'}
-            </span>
-            <span className="text-[10px] font-mono text-on-surface-variant uppercase">
-              ({user?.role === 'OWNER' ? 'Admin / Dono' : user?.role === 'CLIENT' ? 'Cliente' : 'Funcionário'})
-            </span>
-          </div>
-
-          <div className="relative group">
+        {/* Real User Profile Dropdown */}
+        <div className="relative" ref={userRef}>
+          <button
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+            className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-[#1c1b1b] border border-transparent hover:border-[#2a2a2a] transition-all cursor-pointer"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={
@@ -160,17 +176,54 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
                 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
               }
               alt={user?.fullName || 'Avatar'}
-              className="w-8 h-8 rounded-full border border-[#2a2a2a] object-cover cursor-pointer hover:border-primary transition-colors"
+              className="w-8 h-8 rounded-full border border-primary/40 object-cover"
             />
-          </div>
-
-          <button
-            onClick={logout}
-            className="p-1.5 text-on-surface-variant hover:text-red-400 rounded transition-colors hidden sm:block"
-            title="Sair da Conta"
-          >
-            <LogOut className="w-4 h-4" />
+            <div className="hidden sm:flex flex-col items-start text-left">
+              <span className="text-xs font-bold text-on-surface leading-tight">
+                {user?.fullName || 'Lucas Antunes'}
+              </span>
+              <span className="text-[10px] font-mono text-on-surface-variant">
+                @{user?.username || user?.email.split('@')[0] || 'admin'}
+              </span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-on-surface-variant hidden sm:block" />
           </button>
+
+          {/* User Menu Dropdown */}
+          {showUserDropdown && (
+            <div className="absolute right-0 mt-2 w-64 bg-[#141414] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 p-2 space-y-2">
+              <div className="p-3 bg-[#1a1a1a] rounded-lg border border-[#242424] space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface block truncate">
+                    {user?.fullName}
+                  </span>
+                </div>
+                <div>{getRoleBadge()}</div>
+                <p className="text-[10px] font-mono text-zinc-400 truncate">
+                  {user?.email}
+                </p>
+              </div>
+
+              <div className="space-y-1 text-xs font-mono">
+                <Link
+                  href={isClient ? '/portal-cliente' : '/configuracoes'}
+                  onClick={() => setShowUserDropdown(false)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded text-on-surface hover:bg-[#202020] hover:text-primary transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-primary" />
+                  <span>Minha Conta & Alterar Senha</span>
+                </Link>
+
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sair da Conta (Logout)</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
