@@ -7,10 +7,9 @@ import {
   NotificationTriggerType,
   buildWhatsAppMessage,
   createWhatsAppWebLink,
-  sendWhatsAppNotificationApi,
 } from '@/lib/services/whatsappService';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
-import { MessageCircle, Send, Copy, Check, ExternalLink, Smartphone, AlertCircle } from 'lucide-react';
+import { MessageCircle, Copy, Check, ExternalLink } from 'lucide-react';
 
 interface WhatsAppNotificationModalProps {
   isOpen: boolean;
@@ -22,7 +21,7 @@ interface WhatsAppNotificationModalProps {
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   BACKLOG: 'Backlog',
-  PLANNED: 'Planejado / Roteirizado',
+  PLANNED: 'Planejamento / Roteiro',
   IN_PRODUCTION: 'Em Produção (Captação / Edição)',
   IN_REVIEW: 'Em Revisão Interna',
   CLIENT_REVIEW: 'Aguardando Aprovação do Cliente',
@@ -45,35 +44,37 @@ export function WhatsAppNotificationModal({
   const clientName = client?.name || task.clientName;
   const clientPhone = client?.phone || '(11) 98888-7766';
 
-  let trigger: NotificationTriggerType = 'MEDIA_READY_FOR_REVIEW';
   let customMessage = '';
 
   if (newStatus === 'CLIENT_REVIEW') {
-    trigger = 'MEDIA_READY_FOR_REVIEW';
     customMessage = buildWhatsAppMessage('MEDIA_READY_FOR_REVIEW', {
       clientName,
       taskTitle: task.title,
-      mediaType: task.taskType === 'PHOTO' ? 'Fotos / Ensaio' : 'Vídeo 4K UHD',
+      mediaType: task.taskType === 'PHOTO' ? 'Fotos / Ensaio' : 'Vídeo em Alta Resolução',
       portalUrl: 'https://brutalmanager.vercel.app/portal-cliente/entregas',
     });
   } else if (newStatus === 'APPROVED') {
-    customMessage = `Olá, *${clientName}*! 🎉
+    customMessage = `Olá, *${clientName}*.
 
-O seu conteúdo *"${task.title}"* foi *APROVADO* com sucesso e já está pronto para publicação nas redes sociais!
+Confirmamos que o seu conteúdo *"${task.title}"* foi aprovado e agendado para publicação oficial pela equipe da Brutal Marketing.
 
-A equipe da *Brutal Marketing* já preparou as legendas e hashtags estratégicas para o post.
+Acompanhe as entregas e estratégias diretamente em seu portal:
+https://brutalmanager.vercel.app/portal-cliente/entregas
 
-Acompanhe pelo portal:
-👉 https://brutalmanager.vercel.app/portal-cliente/entregas`.trim();
+Atenciosamente,
+Brutal Marketing`.trim();
   } else {
-    customMessage = `Olá, *${clientName}*! 🎬
+    customMessage = `Olá, *${clientName}*.
 
-Atualização de status na *Brutal Marketing*:
+Informamos uma atualização no andamento da sua produção na Brutal Marketing:
 
-O seu conteúdo *"${task.title}"* avançou para a etapa: *${STATUS_LABELS[newStatus] || newStatus}*.
+O conteúdo *"${task.title}"* avançou para a etapa: *${STATUS_LABELS[newStatus] || newStatus}*.
 
-Acompanhe o andamento em tempo real pelo portal do cliente:
-👉 https://brutalmanager.vercel.app/portal-cliente`.trim();
+Acompanhe o andamento pelo portal do cliente:
+https://brutalmanager.vercel.app/portal-cliente
+
+Atenciosamente,
+Brutal Marketing`.trim();
   }
 
   const waWebLink = createWhatsAppWebLink(clientPhone, customMessage);
@@ -81,8 +82,8 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
   const handleOpenWhatsApp = () => {
     window.open(waWebLink, '_blank');
     addToast({
-      title: 'WhatsApp Aberto! 💬',
-      description: `Mensagem enviada para ${clientName} (${clientPhone}).`,
+      title: 'WhatsApp Aberto',
+      description: `Mensagem direcionada para ${clientName} (${clientPhone}).`,
       type: 'success',
     });
     onClose();
@@ -93,7 +94,7 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
     addToast({
-      title: 'Mensagem Copiada! 📋',
+      title: 'Mensagem Copiada',
       type: 'success',
     });
   };
@@ -102,13 +103,13 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Notificar Cliente no WhatsApp? 💬"
+      title="Notificar Cliente no WhatsApp"
       subtitle={`O conteúdo avançou para "${STATUS_LABELS[newStatus] || newStatus}"`}
       maxWidth="lg"
     >
       <div className="space-y-4 font-mono text-xs">
         {/* Client & Task Info */}
-        <div className="p-3 bg-[#181818] border border-[#2a2a2a] rounded-lg space-y-1.5">
+        <div className="p-3.5 bg-[#181818] border border-[#2a2a2a] rounded-lg space-y-1.5">
           <div className="flex justify-between items-center">
             <span className="text-[10px] text-on-surface-variant uppercase font-bold">Cliente Destinatário:</span>
             <span className="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded text-[10px]">
@@ -133,7 +134,7 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
             </button>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-[#005c4b] text-white whitespace-pre-line leading-relaxed shadow-md font-sans">
+          <div className="p-3.5 rounded-lg bg-[#005c4b] text-white whitespace-pre-line leading-relaxed shadow-md font-sans text-xs">
             {customMessage}
           </div>
         </div>
@@ -145,7 +146,7 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
             onClick={onClose}
             className="px-4 py-2 rounded bg-transparent border border-[#2a2a2a] text-on-surface hover:bg-[#1f1f1f]"
           >
-            Continuar sem Enviar
+            Continuar sem Notificar
           </button>
 
           <button
@@ -154,7 +155,7 @@ Acompanhe o andamento em tempo real pelo portal do cliente:
             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 shadow-lg hover:shadow-emerald-600/30 transition-all"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>💬 Enviar no WhatsApp Agora</span>
+            <span>Enviar no WhatsApp ({clientPhone})</span>
             <ExternalLink className="w-3 h-3 opacity-70" />
           </button>
         </div>

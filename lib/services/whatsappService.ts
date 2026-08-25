@@ -34,11 +34,15 @@ export interface WhatsAppTemplateData {
   baseAmount?: number;
   extrasAmount?: number;
   dueDay?: number | string;
+  dueDate?: string;
   pixPayload?: string;
+  pixKey?: string;
+  pixBeneficiary?: string;
   serviceType?: string;
   quantity?: number;
   eventLocation?: string;
   requestedChanges?: string;
+  desiredDate?: string;
 }
 
 export function buildWhatsAppMessage(trigger: NotificationTriggerType, data: WhatsAppTemplateData): string {
@@ -46,81 +50,90 @@ export function buildWhatsAppMessage(trigger: NotificationTriggerType, data: Wha
 
   switch (trigger) {
     case 'MEDIA_READY_FOR_REVIEW':
-      return `Olá, *${data.clientName || 'Cliente'}*! 👋
+      return `Olá, *${data.clientName || 'Cliente'}*.
 
-Aqui é da equipe *Brutal Marketing*.
+Informamos que o conteúdo *"${data.taskTitle || 'Vídeo'}"* (${data.mediaType || 'Vídeo em Alta Resolução'}) foi concluído pela nossa equipe e está disponível para sua revisão e aprovação.
 
-O seu conteúdo *"${data.taskTitle || 'Vídeo'}"* (${data.mediaType || 'Vídeo 4K'}) acabou de ser finalizado e já está disponível para sua revisão e aprovação!
+Para assistir à mídia, fazer anotações ou aprovar a entrega, acesse:
+${data.portalUrl || `${portalBase}/entregas`}
 
-▶️ *Assista, comente por segundo ou aprove com 1 clique:*
-👉 ${data.portalUrl || `${portalBase}/entregas`}
-
-Qualquer dúvida ou ajuste, estamos à disposição! 🚀`.trim();
+Atenciosamente,
+Equipe Brutal Marketing`.trim();
 
     case 'EXTRA_SERVICE_REQUESTED':
-      return `🔔 *NOVA SOLICITAÇÃO DE EXTRA RECEBIDA*
+      return `*NOTIFICAÇÃO: NOVA SOLICITAÇÃO DE SERVIÇO EXTRA*
 
-👤 *Cliente:* ${data.clientName}
-📦 *Serviço:* ${data.quantity || 1}x ${data.serviceType}
-💰 *Valor Estimado:* ${formatCurrency(data.totalAmount || 0)}
-${data.eventLocation ? `📍 *Local:* ${data.eventLocation}\n` : ''}
-Acesse o painel para aprovar e injetar no Kanban:
-👉 https://brutalmanager.vercel.app/solicitacoes`.trim();
+Cliente: ${data.clientName}
+Serviço: ${data.quantity || 1}x ${data.serviceType}
+Valor Previsto: ${formatCurrency(data.totalAmount || 0)}
+${data.desiredDate ? `Data Prevista: ${data.desiredDate}\n` : ''}${data.eventLocation ? `Local do Evento: ${data.eventLocation}\n` : ''}
+Para analisar e aprovar esta solicitação no sistema:
+https://brutalmanager.vercel.app/solicitacoes`.trim();
 
     case 'EXTRA_SERVICE_APPROVED':
-      return `Olá, *${data.clientName}*! ✅
+      return `Olá, *${data.clientName}*.
 
-Sua solicitação de serviço extra *(${data.quantity || 1}x ${data.serviceType})* foi *APROVADA* pela equipe da Brutal Marketing!
+Confirmamos que sua solicitação de serviço extra (*${data.quantity || 1}x ${data.serviceType}*) foi aprovada e integrada à esteira de produção da Brutal Marketing.
 
-O serviço já foi agendado em nossa esteira de produção e o valor será consolidado em seu fechamento mensal.
+O acompanhamento da produção pode ser realizado diretamente em seu portal:
+${data.portalUrl || portalBase}
 
-Acompanhe o andamento pelo seu portal:
-👉 ${data.portalUrl || portalBase}`.trim();
+Atenciosamente,
+Brutal Marketing`.trim();
 
     case 'INVOICE_BILLING_PIX':
-      return `Olá, *${data.clientName}*! 📄
+      return `Prezado(a) *${data.clientName}*,
 
-O fechamento da sua fatura mensal da *Brutal Marketing* está disponível.
+Segue o demonstrativo de fechamento da sua fatura mensal da Brutal Marketing.
 
-💵 *Valor Total:* *${formatCurrency(data.totalAmount || 0)}*
-${data.extrasAmount && data.extrasAmount > 0 ? `• Plano Base: ${formatCurrency(data.baseAmount || 0)}\n• Serviços Extras: ${formatCurrency(data.extrasAmount || 0)}\n` : ''}
-📅 *Vencimento:* Dia ${data.dueDay || '10'}
+• Valor Total: *${formatCurrency(data.totalAmount || 0)}*
+${data.extrasAmount && data.extrasAmount > 0 ? `• Mensalidade Contratual: ${formatCurrency(data.baseAmount || 0)}\n• Serviços Extras Consolidados: ${formatCurrency(data.extrasAmount || 0)}\n` : ''}• Vencimento: Dia ${data.dueDay || data.dueDate || '10'}
 
-🔑 *PIX COPIA E COLA:*
+*Código PIX Copia e Cola:*
 \`${data.pixPayload || '00020126580014br.gov.bcb.pix0136financeiro@brutalmarketing.com.br5204000053039865802BR'}\`
 
-📲 *Pague e veja o recibo no portal:*
-👉 ${data.portalUrl || `${portalBase}/pagamentos`}
+${data.pixKey ? `*Chave PIX:* ${data.pixKey}\n` : ''}${data.pixBeneficiary ? `*Titular:* ${data.pixBeneficiary}\n` : ''}
+Para visualizar o demonstrativo detalhado e o recibo de pagamento:
+${data.portalUrl || `${portalBase}/pagamentos`}
 
-Agradecemos pela parceria! 🚀`.trim();
+Atenciosamente,
+Departamento Financeiro - Brutal Marketing`.trim();
 
     case 'MEDIA_ADJUSTMENTS_REQUESTED':
-      return `⚠️ *AJUSTES SOLICITADOS PELO CLIENTE*
+      return `*NOTIFICAÇÃO: AJUSTE DE CONTEÚDO SOLICITADO*
 
-👤 *Cliente:* ${data.clientName}
-🎬 *Conteúdo:* ${data.taskTitle}
-📝 *Notas de Ajuste:* ${data.requestedChanges || 'Verificar marcações de timestamp no painel.'}
+Cliente: ${data.clientName}
+Conteúdo: "${data.taskTitle}"
 
-Acesse a tarefa para iniciar os retoques:
-👉 https://brutalmanager.vercel.app/producao`.trim();
+Detalhes dos ajustes solicitados:
+${data.requestedChanges || 'Verifique os comentários com marcações de timestamp no portal.'}
+
+Acesse a esteira de produção para revisar as alterações:
+https://brutalmanager.vercel.app/producao`.trim();
 
     default:
-      return `Notificação da Brutal Marketing para ${data.clientName}.`;
+      return '';
   }
 }
 
-export async function sendWhatsAppNotificationApi(params: {
+export async function sendWhatsAppNotificationApi(payload: {
   phone: string;
-  message: string;
-}): Promise<{ success: boolean; message: string }> {
+  trigger: NotificationTriggerType;
+  data: WhatsAppTemplateData;
+}): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch('/api/notifications/whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        phone: sanitizePhoneNumber(payload.phone),
+        message: buildWhatsAppMessage(payload.trigger, payload.data),
+        trigger: payload.trigger,
+      }),
     });
-    return await res.json();
+    const json = await res.json();
+    return json;
   } catch (err: any) {
-    return { success: false, message: err.message || 'Erro ao conectar à API de WhatsApp' };
+    return { success: false, error: err.message || 'Erro ao conectar à API do WhatsApp' };
   }
 }

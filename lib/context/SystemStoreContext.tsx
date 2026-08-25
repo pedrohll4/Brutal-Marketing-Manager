@@ -88,11 +88,22 @@ interface SystemStoreContextType {
   // Notifications
   markNotificationAsRead: (notificationId: string) => void;
   markAllNotificationsAsRead: () => void;
+
+  // System & Admin Contact Settings
+  adminWhatsApp: string;
+  updateAdminWhatsApp: (phone: string) => void;
+  pixKey: string;
+  updatePixKey: (key: string) => void;
+  pixBeneficiary: string;
+  updatePixBeneficiary: (name: string) => void;
 }
 
 const SystemStoreContext = createContext<SystemStoreContextType | undefined>(undefined);
 
 export function SystemStoreProvider({ children }: { children: React.ReactNode }) {
+  const [adminWhatsApp, setAdminWhatsApp] = useState<string>('(16) 99123-4567');
+  const [pixKey, setPixKey] = useState<string>('financeiro@brutalmarketing.com.br');
+  const [pixBeneficiary, setPixBeneficiary] = useState<string>('Brutal Marketing Ltda');
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
@@ -113,10 +124,45 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       if (savedRequests) setServiceRequests(JSON.parse(savedRequests));
       const savedInvoices = localStorage.getItem('brutal_invoices');
       if (savedInvoices) setInvoices(JSON.parse(savedInvoices));
+
+      const savedAdminWa = localStorage.getItem('brutal_admin_whatsapp');
+      if (savedAdminWa) setAdminWhatsApp(savedAdminWa);
+
+      const savedPixKey = localStorage.getItem('brutal_pix_key');
+      if (savedPixKey) setPixKey(savedPixKey);
+
+      const savedBeneficiary = localStorage.getItem('brutal_pix_beneficiary');
+      if (savedBeneficiary) setPixBeneficiary(savedBeneficiary);
     } catch {
       // ignore
     }
   }, []);
+
+  const updateAdminWhatsApp = (phone: string) => {
+    setAdminWhatsApp(phone);
+    try {
+      localStorage.setItem('brutal_admin_whatsapp', phone);
+    } catch {}
+    addToast({
+      title: 'WhatsApp do Admin Atualizado',
+      description: `Notificações de solicitações serão enviadas para ${phone}.`,
+      type: 'success',
+    });
+  };
+
+  const updatePixKey = (key: string) => {
+    setPixKey(key);
+    try {
+      localStorage.setItem('brutal_pix_key', key);
+    } catch {}
+  };
+
+  const updatePixBeneficiary = (name: string) => {
+    setPixBeneficiary(name);
+    try {
+      localStorage.setItem('brutal_pix_beneficiary', name);
+    } catch {}
+  };
 
   const addToast = (toast: Omit<ToastMessage, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -593,6 +639,12 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
         createInvoice,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        adminWhatsApp,
+        updateAdminWhatsApp,
+        pixKey,
+        updatePixKey,
+        pixBeneficiary,
+        updatePixBeneficiary,
       }}
     >
       {children}

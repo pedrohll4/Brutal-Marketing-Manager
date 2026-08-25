@@ -15,7 +15,7 @@ interface PixPaymentModalProps {
 }
 
 export function PixPaymentModal({ isOpen, onClose, invoice }: PixPaymentModalProps) {
-  const { markInvoiceAsPaid } = useSystemStore();
+  const { markInvoiceAsPaid, clients, pixKey, pixBeneficiary } = useSystemStore();
   const [copied, setCopied] = useState(false);
 
   if (!invoice) return null;
@@ -106,15 +106,19 @@ export function PixPaymentModal({ isOpen, onClose, invoice }: PixPaymentModalPro
         <div className="pt-3 border-t border-[#262626] flex flex-col gap-2">
           <WhatsAppShareButton
             trigger="INVOICE_BILLING_PIX"
+            phone={clients.find((c) => c.id === invoice.clientId)?.phone}
             data={{
               clientName: invoice.clientName,
               totalAmount: invoice.totalAmount,
               baseAmount: invoice.baseAmount,
               extrasAmount: invoice.extrasAmount,
               dueDay: new Date(invoice.dueDate).getDate(),
+              dueDate: invoice.dueDate,
               pixPayload: invoice.pixPayload,
+              pixKey,
+              pixBeneficiary,
             }}
-            label="💬 Enviar Fatura & Código PIX no WhatsApp do Cliente"
+            label="Enviar Fatura & Código PIX no WhatsApp do Cliente"
             className="w-full justify-center py-2.5"
           />
 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { WhatsAppShareButton } from '@/components/automations/WhatsAppShareButton';
 import {
   Film,
   Camera,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function ClientSolicitacoesPage() {
-  const { clients, serviceRequests, addServiceRequest } = useSystemStore();
+  const { clients, serviceRequests, addServiceRequest, adminWhatsApp } = useSystemStore();
   const client = clients.find((c) => c.id === 'cli-procampo') || clients[0];
 
   const clientRequests = serviceRequests.filter((r) => r.clientId === client.id);
@@ -483,14 +484,30 @@ export default function ClientSolicitacoesPage() {
                 </span>
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-2">
+                <WhatsAppShareButton
+                  trigger="EXTRA_SERVICE_REQUESTED"
+                  phone={adminWhatsApp}
+                  data={{
+                    clientName: client.companyName || client.name,
+                    serviceType: req.serviceType,
+                    quantity: req.quantity,
+                    totalAmount: req.totalEstimated,
+                    desiredDate: req.desiredDate,
+                    eventLocation: req.eventLocation,
+                    portalUrl: 'https://brutalmanager.vercel.app/solicitacoes',
+                  }}
+                  label="Avisar Admin no WhatsApp"
+                  variant="green"
+                />
+
                 {req.status === 'APPROVED' ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Aprovado & Na Agenda
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Aprovado
                   </span>
                 ) : req.status === 'PENDING' ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded">
-                    <Clock className="w-3.5 h-3.5" /> Aguardando Aprovação
+                    <Clock className="w-3.5 h-3.5" /> Em Análise
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-red-400 bg-red-950/40 border border-red-800/40 px-2.5 py-1 rounded">

@@ -42,21 +42,20 @@ export function MonthlyReportView({ clientId }: MonthlyReportViewProps) {
 
   // WhatsApp Message for Client
   const clientPhone = client?.phone || '(11) 98888-7766';
-  const waReportMessage = `Olá, *${client?.name || client?.companyName}*! 📊
+  const waReportMessage = `Prezado(a) *${client?.name || client?.companyName}*,
 
-Aqui é da equipe *Brutal Marketing*.
+Segue o Relatório Mensal de Produção & Performance referente a *${selectedMonth}*, elaborado pela equipe da Brutal Marketing.
 
-O seu *Relatório Mensal de Produção & Performance* referente a *${selectedMonth}* está pronto!
+*DEMONSTRATIVO DE PRODUÇÃO & ENTREGAS:*
+• Vídeos Entregues: ${deliveredVideos} vídeos (Cota Contratual: ${contractedVideos}${extraVideos > 0 ? ` + ${extraVideos} extras` : ''})
+• Fotos e Ensaios: ${deliveredPhotos || contractedPhotos} fotos tratadas
+• Investimento Consolidado: *${formatCurrency(totalReportAmount)}* (Plano Base: ${formatCurrency(baseMonthlyFee)}${extrasCost > 0 ? ` + Extras: ${formatCurrency(extrasCost)}` : ''})
 
-📈 *RESUMO DAS ENTREGAS:*
-• 🎬 *Vídeos Entregues:* ${deliveredVideos} vídeos (Cota: ${contractedVideos} ${extraVideos > 0 ? `+ ${extraVideos} extras` : ''})
-• 📸 *Fotos & Ensaios:* ${deliveredPhotos || contractedPhotos} fotos tratadas
-• 💰 *Investimento Total:* *${formatCurrency(totalReportAmount)}* (Base: ${formatCurrency(baseMonthlyFee)}${extrasCost > 0 ? ` + Extras: ${formatCurrency(extrasCost)}` : ''})
+Para visualizar o relatório executivo completo, aprovar conteúdos e baixar as mídias em alta resolução:
+https://brutalmanager.vercel.app/portal-cliente/entregas
 
-📲 *Acesse seu portal para ver o relatório completo, baixar as mídias em 4K e pegar as legendas com IA:*
-👉 https://brutalmanager.vercel.app/portal-cliente/entregas
-
-Agradecemos pela grande parceria neste mês! 🚀`.trim();
+Atenciosamente,
+Brutal Marketing`.trim();
 
   const waLink = createWhatsAppWebLink(clientPhone, waReportMessage);
 
@@ -67,8 +66,8 @@ Agradecemos pela grande parceria neste mês! 🚀`.trim();
   const handleSendWhatsApp = () => {
     window.open(waLink, '_blank');
     addToast({
-      title: 'WhatsApp Aberto! 💬',
-      description: `Relatório pronto para envio para ${client?.name} (${clientPhone}).`,
+      title: 'WhatsApp Aberto',
+      description: `Relatório direcionado para ${client?.name} (${clientPhone}).`,
       type: 'success',
     });
   };
@@ -113,7 +112,7 @@ Agradecemos pela grande parceria neste mês! 🚀`.trim();
             className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md hover:shadow-emerald-600/30"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>💬 Enviar Relatório no WhatsApp ({clientPhone})</span>
+            <span>Enviar Relatório no WhatsApp ({clientPhone})</span>
           </button>
 
           <button

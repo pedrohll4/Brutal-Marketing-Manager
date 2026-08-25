@@ -9,7 +9,7 @@ import { WhatsAppShareButton } from '../automations/WhatsAppShareButton';
 import { QrCode, CheckCircle2, AlertCircle, Clock, XCircle, Search, Filter } from 'lucide-react';
 
 export function FinancialTable() {
-  const { invoices } = useSystemStore();
+  const { invoices, clients, pixKey, pixBeneficiary } = useSystemStore();
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -153,6 +153,7 @@ export function FinancialTable() {
 
                         <WhatsAppShareButton
                           trigger="INVOICE_BILLING_PIX"
+                          phone={clients.find((c) => c.id === inv.clientId)?.phone}
                           data={{
                             clientName: inv.clientName,
                             totalAmount: inv.totalAmount,
@@ -160,6 +161,8 @@ export function FinancialTable() {
                             extrasAmount: inv.extrasAmount,
                             dueDay: new Date(inv.dueDate).getDate(),
                             pixPayload: inv.pixPayload,
+                            pixKey,
+                            pixBeneficiary,
                           }}
                           variant="icon"
                         />
