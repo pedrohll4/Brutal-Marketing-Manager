@@ -5,7 +5,7 @@ import { Client, ContractModel, ClientStatus } from '@/lib/types';
 import { Modal } from '../ui/Modal';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
-import { KeyRound, Sparkles, Copy, Check, ShieldCheck, User, Lock, Smartphone } from 'lucide-react';
+import { KeyRound, Sparkles, Copy, Check, ShieldCheck, User, Lock } from 'lucide-react';
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -80,7 +80,7 @@ export function ClientModal({
         companyName: clientToEdit.companyName,
         email: clientToEdit.email,
         username: clientToEdit.username || generateUsername(clientToEdit.name, clientToEdit.companyName),
-        password: clientToEdit.password || 'procampo123',
+        password: clientToEdit.password || 'Brutal@2026',
         phone: clientToEdit.phone,
         document: clientToEdit.document,
         segment: clientToEdit.segment || '',
@@ -135,37 +135,43 @@ export function ClientModal({
     });
   };
 
+  const handleCompanyChange = (companyVal: string) => {
+    setFormData((prev) => {
+      const newUsername = prev.username ? prev.username : generateUsername(prev.name, companyVal);
+      return { ...prev, companyName: companyVal, username: newUsername };
+    });
+  };
+
   const handleCopyWelcomeMessage = () => {
     const loginUrl = 'https://brutalmanager.vercel.app/login';
-    const msg = `Olá, *${formData.name || formData.companyName}*! 👋
+    const msg = `Prezado(a) *${formData.name || formData.companyName}*,
 
-Sua conta no *Brutal Marketing Manager* foi configurada com sucesso pelo nosso Administrador.
+Sua conta de acesso ao portal da Brutal Marketing foi configurada com sucesso pelo nosso Administrador.
 
-🌐 *Link de Acesso ao Portal / App Mobile:*
-👉 ${loginUrl}
+*Link de Acesso:*
+${loginUrl}
 
-👤 *Login (E-mail ou Usuário):*
+*Credenciais de Acesso:*
 • Usuário: \`${formData.username || formData.email.split('@')[0]}\`
 • E-mail: \`${formData.email}\`
+• Senha Inicial: \`${formData.password || 'Brutal@2026'}\`
 
-🔑 *Senha Inicial de Acesso:*
-\`${formData.password || 'procampo123'}\`
-
-📦 *Seu Plano Contratado:*
+*Resumo do Plano Contratado:*
 • ${formData.contractedVideos} Vídeos / Mês
 • ${formData.contractedPhotos} Fotos Tratadas / Mês
 • Fechamento e Vencimento: Dia ${formData.dueDay} de cada mês
 
-_(Você poderá alterar sua senha após o primeiro acesso no painel de configurações)._
+(Você poderá alterar sua senha inicial no primeiro acesso através da aba de configurações do portal).
 
-Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
+Atenciosamente,
+Equipe Brutal Marketing`.trim();
 
     navigator.clipboard.writeText(msg);
     setCopiedWelcome(true);
     setTimeout(() => setCopiedWelcome(false), 3000);
     addToast({
-      title: 'Mensagem de Acesso Copiada! 📋',
-      description: 'Pronta para colar no WhatsApp do cliente.',
+      title: 'Mensagem de Acesso Copiada',
+      description: 'Texto pronto para colar no WhatsApp do cliente.',
       type: 'success',
     });
   };
@@ -175,21 +181,23 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
 
     const clientUsername = formData.username.trim() || formData.email.split('@')[0];
     const clientPassword = formData.password.trim() || 'Brutal@2026';
+    const distinctClientId = clientToEdit?.id || `cli-${Date.now()}`;
 
     const clientPayload = {
       ...formData,
+      id: distinctClientId,
       username: clientUsername,
       password: clientPassword,
     };
 
-    // Also register the UserAccount for authentication
+    // Register user account linked to this exact clientId
     registerUserAccount({
       username: clientUsername,
       email: formData.email,
       password: clientPassword,
       fullName: formData.name || formData.companyName,
       role: 'CLIENT',
-      clientId: clientToEdit?.id,
+      clientId: distinctClientId,
     });
 
     onSave(clientPayload);
@@ -201,7 +209,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
       isOpen={isOpen}
       onClose={onClose}
       title={clientToEdit ? 'Editar Cliente & Acesso' : 'Novo Cliente & Credenciais de Acesso'}
-      subtitle="Cadastre o cliente, defina o login/senha inicial para o app e configure as cotas do contrato"
+      subtitle="Cadastre o cliente, defina o login/senha inicial e configure as cotas do contrato"
       maxWidth="3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-5 text-sm">
@@ -220,7 +228,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
           </div>
 
           <p className="text-[11px] font-mono text-on-surface-variant">
-            O cliente poderá entrar no portal e no aplicativo usando o <strong>E-mail</strong> ou o <strong>Nome de Usuário</strong> abaixo com a senha definida por você.
+            O cliente poderá entrar no portal usando o <strong>E-mail</strong> ou o <strong>Nome de Usuário</strong> com a senha definida abaixo.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
@@ -233,7 +241,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
                 <input
                   type="text"
                   required
-                  placeholder="ex: nicole.procampo"
+                  placeholder="ex: carlos.padaria ou rocha.engenharia"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '.') })}
                   className="w-full bg-[#121212] border border-[#333] rounded pl-9 pr-3 py-2 text-on-surface font-bold focus:border-primary focus:outline-none"
@@ -285,7 +293,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5" /> 📋 Copiar Dados de Acesso para Enviar no WhatsApp
+                  <Copy className="w-3.5 h-3.5" /> Copiar Dados de Acesso para WhatsApp do Cliente
                 </>
               )}
             </button>
@@ -302,13 +310,13 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
+              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1 font-bold">
                 Nome do Responsável / Contato
               </label>
               <input
                 type="text"
                 required
-                placeholder="Ex: Nicole Fernandes"
+                placeholder="Ex: Carlos Eduardo"
                 value={formData.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
@@ -316,15 +324,15 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
+              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1 font-bold">
                 Razão Social / Nome da Empresa
               </label>
               <input
                 type="text"
                 required
-                placeholder="Ex: Procampo Agronegócios Ltda"
+                placeholder="Ex: Padaria Real & Confeitaria"
                 value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                onChange={(e) => handleCompanyChange(e.target.value)}
                 className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
               />
             </div>
@@ -332,7 +340,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
+              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1 font-bold">
                 E-mail Principal
               </label>
               <input
@@ -346,8 +354,8 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
-                Telefone / WhatsApp
+              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1 font-bold">
+                Telefone / WhatsApp do Cliente
               </label>
               <input
                 type="text"
@@ -360,7 +368,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
+              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1 font-bold">
                 CPF / CNPJ
               </label>
               <input
@@ -381,7 +389,7 @@ Qualquer dúvida, nossa equipe está à disposição! 🚀`.trim();
               </label>
               <input
                 type="text"
-                placeholder="Ex: Agronegócio, Moda, Tecnologia, Saúde..."
+                placeholder="Ex: Alimentação, Agronegócio, Moda, Saúde..."
                 value={formData.segment}
                 onChange={(e) => setFormData({ ...formData, segment: e.target.value })}
                 className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"

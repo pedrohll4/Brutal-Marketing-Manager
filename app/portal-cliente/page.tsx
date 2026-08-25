@@ -17,15 +17,24 @@ import {
   TrendingUp,
   Clock,
 } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
 import Link from 'next/link';
 
 export default function ClientPortalDashboard() {
   const { clients, tasks, invoices, serviceRequests, addServiceRequest } = useSystemStore();
+  const { user, activeClientId } = useAuth();
 
-  // Active client: Nicole Procampo
-  const client = clients.find((c) => c.id === 'cli-procampo') || clients[0];
-  const clientTasks = tasks.filter((t) => t.clientId === client.id);
-  const clientInvoices = invoices.filter((i) => i.clientId === client.id);
+  // Dynamically resolve logged-in client
+  const client =
+    clients.find(
+      (c) =>
+        c.id === activeClientId ||
+        c.id === user?.clientId ||
+        c.email.toLowerCase() === user?.email.toLowerCase() ||
+        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
+    ) || clients[0];
+  const clientTasks = tasks.filter((t) => t.clientId === client?.id);
+  const clientInvoices = invoices.filter((i) => i.clientId === client?.id);
   const currentInvoice = clientInvoices[0] || null;
 
   const approvedRequests = serviceRequests.filter(

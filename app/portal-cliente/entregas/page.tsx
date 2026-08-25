@@ -6,12 +6,22 @@ import { formatDate } from '@/lib/utils';
 import { Film, Camera, CheckCircle2, Download, Play, Sparkles, Eye, Clock, Check } from 'lucide-react';
 import { MediaApprovalModal } from '@/components/approvals/MediaApprovalModal';
 import { Task } from '@/lib/types';
+import { useAuth } from '@/lib/context/AuthContext';
 
 export default function ClientEntregasPage() {
   const { clients, tasks } = useSystemStore();
-  const client = clients.find((c) => c.id === 'cli-procampo') || clients[0];
+  const { user, activeClientId } = useAuth();
 
-  const clientTasks = tasks.filter((t) => t.clientId === client.id);
+  const client =
+    clients.find(
+      (c) =>
+        c.id === activeClientId ||
+        c.id === user?.clientId ||
+        c.email.toLowerCase() === user?.email.toLowerCase() ||
+        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
+    ) || clients[0];
+
+  const clientTasks = tasks.filter((t) => t.clientId === client?.id);
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null);
   const [filterType, setFilterType] = useState<'ALL' | 'VIDEO' | 'PHOTO'>('ALL');
 

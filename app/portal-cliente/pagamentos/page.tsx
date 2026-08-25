@@ -5,12 +5,22 @@ import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PixPaymentModal } from '@/components/financial/PixPaymentModal';
 import { CreditCard, QrCode, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
 
 export default function ClientPagamentosPage() {
   const { clients, invoices } = useSystemStore();
-  const client = clients.find((c) => c.id === 'cli-procampo') || clients[0];
+  const { user, activeClientId } = useAuth();
 
-  const clientInvoices = invoices.filter((i) => i.clientId === client.id);
+  const client =
+    clients.find(
+      (c) =>
+        c.id === activeClientId ||
+        c.id === user?.clientId ||
+        c.email.toLowerCase() === user?.email.toLowerCase() ||
+        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
+    ) || clients[0];
+
+  const clientInvoices = invoices.filter((i) => i.clientId === client?.id);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
 
   return (

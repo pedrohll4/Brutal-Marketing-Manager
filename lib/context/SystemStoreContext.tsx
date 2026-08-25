@@ -118,6 +118,18 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   // Load from local storage if available for session persistence
   useEffect(() => {
     try {
+      const savedClients = localStorage.getItem('brutal_clients');
+      if (savedClients) {
+        const parsed = JSON.parse(savedClients);
+        if (Array.isArray(parsed) && parsed.length > 0) setClients(parsed);
+      }
+
+      const savedEmployees = localStorage.getItem('brutal_employees');
+      if (savedEmployees) {
+        const parsed = JSON.parse(savedEmployees);
+        if (Array.isArray(parsed) && parsed.length > 0) setEmployees(parsed);
+      }
+
       const savedTasks = localStorage.getItem('brutal_tasks');
       if (savedTasks) setTasks(JSON.parse(savedTasks));
       const savedRequests = localStorage.getItem('brutal_requests');
@@ -137,6 +149,20 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       // ignore
     }
   }, []);
+
+  const saveClientsToStorage = (newClients: Client[]) => {
+    setClients(newClients);
+    try {
+      localStorage.setItem('brutal_clients', JSON.stringify(newClients));
+    } catch {}
+  };
+
+  const saveEmployeesToStorage = (newEmployees: Employee[]) => {
+    setEmployees(newEmployees);
+    try {
+      localStorage.setItem('brutal_employees', JSON.stringify(newEmployees));
+    } catch {}
+  };
 
   const updateAdminWhatsApp = (phone: string) => {
     setAdminWhatsApp(phone);
@@ -183,7 +209,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       id: `cli-${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    setClients((prev) => [newClient, ...prev]);
+    const updated = [newClient, ...clients];
+    saveClientsToStorage(updated);
     addToast({
       title: 'Cliente Cadastrado',
       description: `${newClient.name} (${newClient.companyName}) foi adicionado com sucesso.`,
@@ -192,9 +219,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   };
 
   const updateClient = (id: string, updates: Partial<Client>) => {
-    setClients((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
+    const updated = clients.map((c) => (c.id === id ? { ...c, ...updates } : c));
+    saveClientsToStorage(updated);
     addToast({
       title: 'Cliente Atualizado',
       description: 'As alterações foram salvas.',
@@ -204,7 +230,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
 
   const deleteClient = (id: string) => {
     const client = clients.find((c) => c.id === id);
-    setClients((prev) => prev.filter((c) => c.id !== id));
+    const updated = clients.filter((c) => c.id !== id);
+    saveClientsToStorage(updated);
     addToast({
       title: 'Cliente Removido',
       description: `${client?.name || 'Cliente'} foi removido do sistema.`,
@@ -219,7 +246,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       id: `emp-${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    setEmployees((prev) => [...prev, newEmp]);
+    const updated = [...employees, newEmp];
+    saveEmployeesToStorage(updated);
     addToast({
       title: 'Funcionário Cadastrado',
       description: `${newEmp.name} foi adicionado à equipe.`,
@@ -228,9 +256,8 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   };
 
   const updateEmployee = (id: string, updates: Partial<Employee>) => {
-    setEmployees((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-    );
+    const updated = employees.map((e) => (e.id === id ? { ...e, ...updates } : e));
+    saveEmployeesToStorage(updated);
     addToast({
       title: 'Equipe Atualizada',
       description: 'Dados do colaborador foram atualizados.',
