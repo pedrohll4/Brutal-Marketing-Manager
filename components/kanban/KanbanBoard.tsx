@@ -5,6 +5,7 @@ import { Task, TaskStatus } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { KanbanCard } from './KanbanCard';
 import { TaskModal } from './TaskModal';
+import { WhatsAppNotificationModal } from '../automations/WhatsAppNotificationModal';
 import { Plus, Filter, Search, Film, CheckCircle2, Sparkles, Image as ImageIcon } from 'lucide-react';
 
 const COLUMNS: { id: TaskStatus; label: string; countBadgeColor: string }[] = [
@@ -29,6 +30,11 @@ export function KanbanBoard() {
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [targetColumnStatus, setTargetColumnStatus] = useState<TaskStatus>('BACKLOG');
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
+  // WhatsApp Notification Modal State
+  const [isWhatsAppNotifyOpen, setIsWhatsAppNotifyOpen] = useState(false);
+  const [notifyTask, setNotifyTask] = useState<Task | null>(null);
+  const [notifyStatus, setNotifyStatus] = useState<TaskStatus>('CLIENT_REVIEW');
 
   // Filtering
   const filteredTasks = tasks.filter((task) => {
@@ -72,12 +78,22 @@ export function KanbanBoard() {
     }
   };
 
+  const handleStatusChangeWithNotification = (taskId: string, newStatus: TaskStatus) => {
+    updateTaskStatus(taskId, newStatus);
+    const targetTask = tasks.find((t) => t.id === taskId);
+    if (targetTask && targetTask.status !== newStatus) {
+      setNotifyTask({ ...targetTask, status: newStatus });
+      setNotifyStatus(newStatus);
+      setIsWhatsAppNotifyOpen(true);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     setDragOverColumn(null);
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
-      updateTaskStatus(taskId, status);
+      handleStatusChangeWithNotification(taskId, status);
     }
   };
 
@@ -221,7 +237,7 @@ export function KanbanBoard() {
                         key={task.id}
                         task={task}
                         onOpenTask={handleOpenEditTask}
-                        onMoveStatus={updateTaskStatus}
+                        onMoveStatus={handleStatusChangeWithNotification}
                       />
                     ))
                   )}
@@ -238,6 +254,15 @@ export function KanbanBoard() {
         onClose={() => setIsTaskModalOpen(false)}
         taskToEdit={taskToEdit}
         initialStatus={targetColumnStatus}
+      />
+
+      {/* Pop-up de Notificação de WhatsApp Automático ao mudar status */}
+      <WhatsAppNotificationModal
+        isOpen={isWhatsAppNotifyOpen}
+        onClose={() => setIsWhatsAppNotifyOpen(false)}
+        task={notifyTask}
+        newStatus={notifyStatus}
+        client={clients.find((c) => c.id === notifyTask?.clientId)}
       />
     </div>
   );
