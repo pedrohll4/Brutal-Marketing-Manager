@@ -48,6 +48,14 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
     { label: 'Configurações', href: '/configuracoes', icon: Settings },
   ];
 
+  const employeeNavItems = [
+    { label: 'Painel Operacional', href: '/', icon: LayoutDashboard },
+    { label: 'Produção Audiovisual', href: '/producao', icon: Film },
+    { label: 'Agenda de Gravações', href: '/calendario', icon: Calendar },
+    { label: 'Campanhas', href: '/campanhas', icon: Megaphone },
+    { label: 'Clientes & Briefings', href: '/clientes', icon: Users },
+  ];
+
   const clientNavItems = [
     { label: 'Meu Dashboard', href: '/portal-cliente', icon: LayoutDashboard },
     { label: 'Solicitar Serviço', href: '/portal-cliente/solicitacoes', icon: Plus },
@@ -55,7 +63,7 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
     { label: 'Faturas & PIX', href: '/portal-cliente/pagamentos', icon: CreditCard },
   ];
 
-  const navItems = isClient ? clientNavItems : adminNavItems;
+  const navItems = isClient ? clientNavItems : isEmployee ? employeeNavItems : adminNavItems;
 
   return (
     <>
@@ -76,8 +84,10 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
               <span>CONTROLE DE PRODUÇÃO</span>
               {isClient ? (
                 <span className="text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded border border-primary/30">CLIENTE</span>
+              ) : isEmployee ? (
+                <span className="text-blue-400 font-bold bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-800/40">EQUIPE</span>
               ) : (
-                <span className="text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">PRO</span>
+                <span className="text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">ADMIN</span>
               )}
             </div>
           </Link>

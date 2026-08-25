@@ -2,10 +2,12 @@
 
 import React from 'react';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
+import { useAuth } from '@/lib/context/AuthContext';
 import { Users, Megaphone, CheckSquare, Film, CreditCard, TrendingUp, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export function MetricsBento() {
+  const { isEmployee } = useAuth();
   const { clients, campaigns, tasks, invoices } = useSystemStore();
 
   const activeClientsCount = clients.filter((c) => c.status === 'ACTIVE').length;
@@ -100,34 +102,72 @@ export function MetricsBento() {
         </div>
       </div>
 
-      {/* Metric 5: Faturamento Previsto (Span 2 cols on Desktop) */}
-      <div className="brutal-card p-4 rounded-lg col-span-2 flex flex-col justify-between bg-[#161616] hover:border-[#353534] transition-colors">
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
-            Faturamento previsto
-          </span>
-          <CreditCard className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <span className="text-2xl md:text-3xl font-black text-on-surface block tracking-tight">
-              {formatCurrency(totalRevenueExpected || 485200)}
+      {/* Metric 5: Faturamento Previsto (Only for Admin / Owner) or Gravações & Prazos (for Staff) */}
+      {!isEmployee ? (
+        <div className="brutal-card p-4 rounded-lg col-span-2 flex flex-col justify-between bg-[#161616] hover:border-[#353534] transition-colors">
+          <div className="flex justify-between items-start mb-3">
+            <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+              Faturamento previsto
             </span>
-            <div className="flex items-center gap-1 mt-1 text-[11px] text-green-400 font-mono">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+8.4% vs mês ant.</span>
+            <CreditCard className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <span className="text-2xl md:text-3xl font-black text-on-surface block tracking-tight">
+                {formatCurrency(totalRevenueExpected || 485200)}
+              </span>
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-green-400 font-mono">
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>+8.4% vs mês ant.</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] font-mono text-on-surface-variant uppercase block mb-0.5">
+                Valores em aberto
+              </span>
+              <span className="text-sm md:text-base font-bold text-red-400 font-mono">
+                {formatCurrency(totalOpenRevenue || 42100)}
+              </span>
             </div>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] font-mono text-on-surface-variant uppercase block mb-0.5">
-              Valores em aberto
-            </span>
-            <span className="text-sm md:text-base font-bold text-red-400 font-mono">
-              {formatCurrency(totalOpenRevenue || 42100)}
-            </span>
-          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="brutal-card p-4 rounded-lg flex flex-col justify-between hover:border-[#353534] transition-colors">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                Gravações
+              </span>
+              <Film className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-on-surface block tracking-tight">
+                {tasks.filter((t) => t.status === 'IN_PRODUCTION').length || 8}
+              </span>
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-blue-400 font-mono">
+                <span>em produção</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="brutal-card p-4 rounded-lg flex flex-col justify-between hover:border-[#353534] transition-colors">
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">
+                Revisão
+              </span>
+              <CheckSquare className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-on-surface block tracking-tight">
+                {tasks.filter((t) => t.status === 'IN_REVIEW').length || 5}
+              </span>
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-amber-400 font-mono">
+                <span>aguardando aprovação</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -29,12 +29,21 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
       return;
     }
 
-    // 3. If specific roles are required and user role is not allowed
+    // 3. If employee tries to access restricted admin financial or management routes
+    if (role === 'EMPLOYEE') {
+      const restrictedForEmployee = ['/financeiro', '/funcionarios', '/solicitacoes'];
+      if (restrictedForEmployee.some((route) => pathname.startsWith(route))) {
+        router.replace('/producao');
+        return;
+      }
+    }
+
+    // 4. If specific roles are required and user role is not allowed
     if (allowedRoles && role && !allowedRoles.includes(role)) {
       if (role === 'CLIENT') {
         router.replace('/portal-cliente');
       } else {
-        router.replace('/');
+        router.replace('/producao');
       }
     }
   }, [user, role, isLoading, pathname, router, allowedRoles]);
@@ -63,6 +72,14 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   // Prevent rendering admin content if user is client
   if (role === 'CLIENT' && !pathname.startsWith('/portal-cliente')) {
     return null;
+  }
+
+  // Prevent rendering restricted financial/admin content if user is employee
+  if (role === 'EMPLOYEE') {
+    const restrictedForEmployee = ['/financeiro', '/funcionarios', '/solicitacoes'];
+    if (restrictedForEmployee.some((route) => pathname.startsWith(route))) {
+      return null;
+    }
   }
 
   return <>{children}</>;

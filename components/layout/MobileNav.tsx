@@ -10,6 +10,7 @@ import {
   Film,
   Calendar,
   CreditCard,
+  Megaphone,
   X,
 } from 'lucide-react';
 import { SideNavBar } from './SideNavBar';
@@ -21,13 +22,21 @@ interface MobileNavProps {
 
 export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProps) {
   const pathname = usePathname();
-  const { isClient } = useAuth();
+  const { isClient, isEmployee } = useAuth();
 
   const mobileNavTabs = isClient
     ? [
         { label: 'Início', href: '/portal-cliente', icon: LayoutDashboard },
         { label: 'Entregas', href: '/portal-cliente/entregas', icon: Film },
         { label: 'Faturas', href: '/portal-cliente/pagamentos', icon: CreditCard },
+      ]
+    : isEmployee
+    ? [
+        { label: 'Início', href: '/', icon: LayoutDashboard },
+        { label: 'Produção', href: '/producao', icon: Film },
+        { label: 'Agenda', href: '/calendario', icon: Calendar },
+        { label: 'Campanhas', href: '/campanhas', icon: Megaphone },
+        { label: 'Clientes', href: '/clientes', icon: Users },
       ]
     : [
         { label: 'Início', href: '/', icon: LayoutDashboard },

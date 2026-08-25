@@ -3,6 +3,7 @@
 import React from 'react';
 import { Client } from '@/lib/types';
 import { useSystemStore } from '@/lib/context/SystemStoreContext';
+import { useAuth } from '@/lib/context/AuthContext';
 import { calculateClientQuotas } from '@/lib/services/contractService';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
@@ -14,6 +15,7 @@ interface ClientCardProps {
 }
 
 export function ClientCard({ client }: ClientCardProps) {
+  const { isEmployee } = useAuth();
   const { tasks, serviceRequests } = useSystemStore();
 
   const clientTasks = tasks.filter((t) => t.clientId === client.id);
@@ -100,18 +102,22 @@ export function ClientCard({ client }: ClientCardProps) {
 
           <div
             className={`bg-[#181818] border p-2.5 rounded ${
-              client.status === 'PENDING_PAYMENT' ? 'border-red-900/60 bg-red-950/20' : 'border-[#262626]'
+              client.status === 'PENDING_PAYMENT' && !isEmployee ? 'border-red-900/60 bg-red-950/20' : 'border-[#262626]'
             }`}
           >
             <p
               className={`text-[10px] font-mono uppercase mb-0.5 ${
-                client.status === 'PENDING_PAYMENT' ? 'text-red-400' : 'text-on-surface-variant'
+                client.status === 'PENDING_PAYMENT' && !isEmployee ? 'text-red-400' : 'text-on-surface-variant'
               }`}
             >
-              Valor Mensal
+              {isEmployee ? 'Cota Contratada' : 'Valor Mensal'}
             </p>
             <p className="text-xs font-bold text-on-surface font-mono">
-              {client.monthlyFee > 0 ? formatCurrency(client.monthlyFee) : '--'}
+              {isEmployee
+                ? `${client.contractedVideos || 12} vídeos/mês`
+                : client.monthlyFee > 0
+                ? formatCurrency(client.monthlyFee)
+                : '--'}
             </p>
           </div>
         </div>
