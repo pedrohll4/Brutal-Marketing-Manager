@@ -121,13 +121,13 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     // Fetch all live data from Supabase
     fetchInitialDataFromSupabase().then((cloudData) => {
       if (cloudData) {
-        if (cloudData.clients.length > 0) setClients(cloudData.clients);
-        if (cloudData.employees.length > 0) setEmployees(cloudData.employees);
-        if (cloudData.campaigns.length > 0) setCampaigns(cloudData.campaigns);
-        if (cloudData.tasks.length > 0) setTasks(cloudData.tasks);
-        if (cloudData.serviceRequests.length > 0) setServiceRequests(cloudData.serviceRequests);
-        if (cloudData.calendarEvents.length > 0) setCalendarEvents(cloudData.calendarEvents);
-        if (cloudData.invoices.length > 0) setInvoices(cloudData.invoices);
+        setClients(cloudData.clients);
+        setEmployees(cloudData.employees);
+        setCampaigns(cloudData.campaigns);
+        setTasks(cloudData.tasks);
+        setServiceRequests(cloudData.serviceRequests);
+        setCalendarEvents(cloudData.calendarEvents);
+        setInvoices(cloudData.invoices);
       }
       setIsLoadingData(false);
     });

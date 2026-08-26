@@ -63,135 +63,91 @@ export async function fetchInitialDataFromSupabase() {
       .order('created_at', { ascending: false });
 
     let loadedClients: Client[] = [];
-    if (!clientsError && dbClients && dbClients.length > 0) {
+    if (!clientsError && dbClients) {
       loadedClients = dbClients.map(mapDbToClient);
-    }
-    // Merge with mockClients to ensure demo data is preserved
-    const mergedClients = [...loadedClients];
-    for (const mClient of mockClients) {
-      if (!mergedClients.some((c) => c.id === mClient.id || c.email.toLowerCase() === mClient.email.toLowerCase())) {
-        mergedClients.push(mClient);
-      }
     }
 
     // 2. Employees
-    const { data: dbEmployees } = await supabase
+    const { data: dbEmployees, error: employeesError } = await supabase
       .from('employees')
       .select('*')
       .order('created_at', { ascending: false });
 
     let loadedEmployees: Employee[] = [];
-    if (dbEmployees && dbEmployees.length > 0) {
+    if (!employeesError && dbEmployees) {
       loadedEmployees = dbEmployees.map(mapDbToEmployee);
-    }
-    const mergedEmployees = [...loadedEmployees];
-    for (const mEmp of mockEmployees) {
-      if (!mergedEmployees.some((e) => e.id === mEmp.id || e.email.toLowerCase() === mEmp.email.toLowerCase())) {
-        mergedEmployees.push(mEmp);
-      }
     }
 
     // 3. Campaigns
-    const { data: dbCampaigns } = await supabase
+    const { data: dbCampaigns, error: campaignsError } = await supabase
       .from('campaigns')
       .select('*')
       .order('created_at', { ascending: false });
 
     let loadedCampaigns: Campaign[] = [];
-    if (dbCampaigns && dbCampaigns.length > 0) {
-      loadedCampaigns = dbCampaigns.map((c) => mapDbToCampaign(c, mergedClients));
-    }
-    const mergedCampaigns = [...loadedCampaigns];
-    for (const mCamp of mockCampaigns) {
-      if (!mergedCampaigns.some((c) => c.id === mCamp.id || c.name.toLowerCase() === mCamp.name.toLowerCase())) {
-        mergedCampaigns.push(mCamp);
-      }
+    if (!campaignsError && dbCampaigns) {
+      loadedCampaigns = dbCampaigns.map((c) => mapDbToCampaign(c, loadedClients));
     }
 
     // 4. Tasks
-    const { data: dbTasks } = await supabase
+    const { data: dbTasks, error: tasksError } = await supabase
       .from('tasks')
       .select('*')
       .order('created_at', { ascending: false });
 
     let loadedTasks: Task[] = [];
-    if (dbTasks && dbTasks.length > 0) {
+    if (!tasksError && dbTasks) {
       loadedTasks = dbTasks.map((t) => {
-        const client = mergedClients.find((c) => c.id === t.client_id || (t.client_id && c.id.includes(t.client_id)));
-        const emp = mergedEmployees.find((e) => e.id === t.assignee_id);
+        const client = loadedClients.find((c) => c.id === t.client_id || (t.client_id && c.id.includes(t.client_id)));
+        const emp = loadedEmployees.find((e) => e.id === t.assignee_id);
         return mapDbToTask(t, client?.name, emp?.name);
       });
     }
-    // Merge with mockTasks so all videos and review tasks are always available
-    const mergedTasks = [...loadedTasks];
-    for (const mTask of mockTasks) {
-      if (!mergedTasks.some((t) => t.id === mTask.id || (t.title.toLowerCase() === mTask.title.toLowerCase() && t.clientId === mTask.clientId))) {
-        mergedTasks.push(mTask);
-      }
-    }
 
     // 5. Service Requests
-    const { data: dbRequests } = await supabase
+    const { data: dbRequests, error: requestsError } = await supabase
       .from('service_requests')
       .select('*')
       .order('created_at', { ascending: false });
 
     let loadedRequests: ServiceRequest[] = [];
-    if (dbRequests && dbRequests.length > 0) {
+    if (!requestsError && dbRequests) {
       loadedRequests = dbRequests.map((r) => {
-        const client = mergedClients.find((c) => c.id === r.client_id);
+        const client = loadedClients.find((c) => c.id === r.client_id);
         return mapDbToRequest(r, client?.name);
       });
     }
-    const mergedRequests = [...loadedRequests];
-    for (const mReq of mockServiceRequests) {
-      if (!mergedRequests.some((r) => r.id === mReq.id)) {
-        mergedRequests.push(mReq);
-      }
-    }
 
     // 6. Calendar Events
-    const { data: dbEvents } = await supabase
+    const { data: dbEvents, error: eventsError } = await supabase
       .from('calendar_events')
       .select('*')
       .order('event_date', { ascending: true });
 
     let loadedEvents: CalendarEvent[] = [];
-    if (dbEvents && dbEvents.length > 0) {
-      loadedEvents = dbEvents.map((e) => mapDbToCalendarEvent(e, mergedClients));
-    }
-    const mergedEvents = [...loadedEvents];
-    for (const mEvt of mockCalendarEvents) {
-      if (!mergedEvents.some((e) => e.id === mEvt.id)) {
-        mergedEvents.push(mEvt);
-      }
+    if (!eventsError && dbEvents) {
+      loadedEvents = dbEvents.map((e) => mapDbToCalendarEvent(e, loadedClients));
     }
 
     // 7. Invoices
-    const { data: dbInvoices } = await supabase
+    const { data: dbInvoices, error: invoicesError } = await supabase
       .from('invoices')
       .select('*')
       .order('created_at', { ascending: false });
 
     let loadedInvoices: Invoice[] = [];
-    if (dbInvoices && dbInvoices.length > 0) {
-      loadedInvoices = dbInvoices.map((i) => mapDbToInvoice(i, mergedClients));
-    }
-    const mergedInvoices = [...loadedInvoices];
-    for (const mInv of mockInvoices) {
-      if (!mergedInvoices.some((i) => i.id === mInv.id)) {
-        mergedInvoices.push(mInv);
-      }
+    if (!invoicesError && dbInvoices) {
+      loadedInvoices = dbInvoices.map((i) => mapDbToInvoice(i, loadedClients));
     }
 
     return {
-      clients: mergedClients,
-      employees: mergedEmployees,
-      campaigns: mergedCampaigns,
-      tasks: mergedTasks,
-      serviceRequests: mergedRequests,
-      calendarEvents: mergedEvents,
-      invoices: mergedInvoices,
+      clients: loadedClients,
+      employees: loadedEmployees,
+      campaigns: loadedCampaigns,
+      tasks: loadedTasks,
+      serviceRequests: loadedRequests,
+      calendarEvents: loadedEvents,
+      invoices: loadedInvoices,
     };
   } catch (error) {
     console.error('Supabase fetch error:', error);
