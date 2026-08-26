@@ -5,7 +5,7 @@ import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import { calculateClientQuotas } from '@/lib/services/contractService';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PixPaymentModal } from '@/components/financial/PixPaymentModal';
-import { Modal } from '@/components/ui/Modal';
+import { MediaApprovalModal } from '@/components/approvals/MediaApprovalModal';
 import {
   Film,
   Sparkles,
@@ -16,13 +16,20 @@ import {
   ArrowUpRight,
   TrendingUp,
   Clock,
+  Play,
+  Eye,
+  AlertCircle,
+  Check,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import Link from 'next/link';
 import { ClientServiceCatalogSection } from '@/components/requests/ClientServiceCatalogAndModal';
+import { isTaskForClient } from '@/lib/utils/clientMatcher';
+import { Task } from '@/lib/types';
 
 export default function ClientPortalDashboard() {
-  const { clients, tasks, invoices, serviceRequests, addServiceRequest } = useSystemStore();
+  const { clients, tasks, invoices, serviceRequests } = useSystemStore();
   const { user, activeClientId } = useAuth();
 
   // Dynamically resolve logged-in client
@@ -31,74 +38,45 @@ export default function ClientPortalDashboard() {
       (c) =>
         c.id === activeClientId ||
         c.id === user?.clientId ||
-        c.email.toLowerCase() === user?.email.toLowerCase() ||
-        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
+        c.email.toLowerCase() === (user?.email || '').toLowerCase() ||
+        (c.username && c.username.toLowerCase() === (user?.username || '').toLowerCase()) ||
+        (c.name.toLowerCase().includes('procampo') && (user?.email || '').includes('procampo'))
     ) || clients[0];
-  const clientTasks = tasks.filter((t) => t.clientId === client?.id);
-  const clientInvoices = invoices.filter((i) => i.clientId === client?.id);
+
+  // Match all tasks for this client (robust matcher)
+  const clientTasks = tasks.filter((t) => isTaskForClient(t, client, user));
+
+  // Invoices for client
+  const clientInvoices = invoices.filter((i) =>
+    i.clientId === client?.id ||
+    (client?.name && i.clientName.toLowerCase().includes(client.name.toLowerCase().split(' ')[0])) ||
+    (user?.email?.includes('procampo') && i.clientName.toLowerCase().includes('procampo'))
+  );
   const currentInvoice = clientInvoices[0] || null;
 
+  // Requests
   const approvedRequests = serviceRequests.filter(
-    (r) => r.clientId === client.id && r.status === 'APPROVED'
+    (r) =>
+      r.status === 'APPROVED' &&
+      (r.clientId === client.id ||
+        (client.name && r.clientName.toLowerCase().includes(client.name.toLowerCase().split(' ')[0])) ||
+        (user?.email?.includes('procampo') && r.clientName.toLowerCase().includes('procampo')))
   );
 
   const quotas = calculateClientQuotas(client, clientTasks, approvedRequests);
 
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null);
 
-  // New Request Form
-  const [requestForm, setRequestForm] = useState({
-    serviceType: 'VIDEO' as any,
-    quantity: 3,
-    desiredDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
-    description: '',
-  });
-
-  const getUnitPrice = (type: string) => {
-    switch (type) {
-      case 'VIDEO':
-        return client.extraVideoPrice || 150;
-      case 'PHOTO':
-        return client.extraPhotoPrice || 80;
-      case 'EVENT':
-        return client.extraEventPrice || 500;
-      case 'DAILY':
-        return client.extraDailyPrice || 300;
-      default:
-        return 150;
-    }
-  };
-
-  const calculatedTotal = getUnitPrice(requestForm.serviceType) * requestForm.quantity;
-
-  const handleSendRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    addServiceRequest({
-      clientId: client.id,
-      clientName: client.name,
-      serviceType: requestForm.serviceType,
-      quantity: Number(requestForm.quantity),
-      unitPrice: getUnitPrice(requestForm.serviceType),
-      totalEstimated: calculatedTotal,
-      desiredDate: requestForm.desiredDate,
-      description: requestForm.description,
-    });
-    setIsRequestModalOpen(false);
-    setRequestForm({
-      serviceType: 'VIDEO',
-      quantity: 3,
-      desiredDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
-      description: '',
-    });
-  };
-
-  // Recent delivered and upcoming tasks
+  // Group tasks by operational status
+  const pendingReviewTasks = clientTasks.filter((t) =>
+    ['CLIENT_REVIEW', 'IN_REVIEW'].includes(t.status)
+  );
+  const inProductionTasks = clientTasks.filter((t) =>
+    ['IN_PRODUCTION', 'PLANNED', 'BACKLOG'].includes(t.status)
+  );
   const deliveredTasks = clientTasks.filter((t) =>
     ['APPROVED', 'PUBLISHED'].includes(t.status)
-  );
-  const upcomingTasks = clientTasks.filter(
-    (t) => !['APPROVED', 'PUBLISHED'].includes(t.status)
   );
 
   return (
@@ -118,8 +96,82 @@ export default function ClientPortalDashboard() {
         </div>
       </div>
 
-      {/* 🚀 Giant Mega Hero Button & Pre-Options Catalog */}
+      {/* 🚀 1. Giant Mega Hero Button & Pre-Options Catalog */}
       <ClientServiceCatalogSection client={client} />
+
+      {/* 🚨 2. URGENT REVIEW BANNER (If tasks are waiting for client approval) */}
+      {pendingReviewTasks.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-r from-amber-950/70 via-[#1e1710] to-[#161616] border-2 border-amber-500/70 p-5 sm:p-6 shadow-[0_10px_35px_rgba(245,158,11,0.2)] space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-black flex items-center justify-center font-bold shrink-0 animate-pulse">
+                <AlertCircle className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-amber-300 tracking-tight">
+                  {pendingReviewTasks.length === 1
+                    ? '1 Vídeo Pronto Aguardando Sua Aprovação!'
+                    : `${pendingReviewTasks.length} Vídeos Prontos Aguardando Sua Aprovação!`}
+                </h3>
+                <p className="text-xs text-amber-200/80 font-mono">
+                  Assista ao pré-corte com comentários por segundo e aprove com 1 clique para publicação
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/portal-cliente/entregas"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg uppercase tracking-wider transition-all self-start sm:self-auto shadow"
+            >
+              Ver Todos ({pendingReviewTasks.length}) →
+            </Link>
+          </div>
+
+          {/* Cards for Pending Reviews */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {pendingReviewTasks.map((t) => (
+              <div
+                key={t.id}
+                className="bg-[#141414]/90 border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between gap-3 hover:border-amber-400 transition-all shadow-md"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Aguardando Seu Aceite
+                    </span>
+                    {t.isExtra && (
+                      <span className="text-[10px] font-mono font-bold text-primary bg-primary/20 border border-primary/40 px-2 py-0.5 rounded-full uppercase">
+                        Extra Solicitado
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="font-bold text-sm text-on-surface line-clamp-1">
+                    {t.title}
+                  </h4>
+                  <p className="text-xs text-on-surface-variant font-sans line-clamp-2 mt-1">
+                    {t.description || 'Vídeo finalizado pela equipe de edição. Pronto para sua revisão!'}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-[#262626] flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    Prazo: {formatDate(t.dueDate)}
+                  </span>
+
+                  <button
+                    onClick={() => setSelectedTaskForReview(t)}
+                    className="px-4 py-2 bg-gradient-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-500 text-white font-mono font-bold text-xs rounded-lg shadow flex items-center gap-1.5 transition-transform active:scale-95"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span>Revisar & Aprovar</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Quotas Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -153,10 +205,13 @@ export default function ClientPortalDashboard() {
           <div className="mt-2">
             <div className="flex justify-between text-[10px] font-mono text-primary font-bold mb-1">
               <span>{quotas.usedVideos} / {quotas.contractedVideos} utilizados</span>
-              <span>100%</span>
+              <span>{quotas.percentageUsed}%</span>
             </div>
             <div className="w-full bg-[#201f1f] h-2 rounded-full overflow-hidden">
-              <div className="bg-primary h-full rounded-full w-full" />
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-500"
+                style={{ width: `${quotas.percentageUsed}%` }}
+              />
             </div>
           </div>
         </div>
@@ -182,7 +237,7 @@ export default function ClientPortalDashboard() {
           <div>
             <div className="flex justify-between items-start mb-2">
               <span className="text-xs font-mono text-on-surface-variant uppercase">
-                Valor Total de Agosto
+                Fatura de {new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date())}
               </span>
               <CreditCard className="w-4 h-4 text-primary" />
             </div>
@@ -196,7 +251,7 @@ export default function ClientPortalDashboard() {
 
           <button
             onClick={() => setIsPixModalOpen(true)}
-            className="mt-3 w-full bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2 px-3 rounded flex items-center justify-center gap-1.5 transition-all shadow"
+            className="mt-3 w-full bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow"
           >
             <span>Pagar agora (PIX)</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -212,46 +267,70 @@ export default function ClientPortalDashboard() {
             <div>
               <h3 className="text-base font-bold text-on-surface">Vídeos e Conteúdos Produzidos</h3>
               <p className="text-xs text-on-surface-variant font-mono mt-0.5">
-                Total de {deliveredTasks.length} conteúdos finalizados em Agosto
+                Total de {clientTasks.length} conteúdos na sua esteira de produção
               </p>
             </div>
             <Link
               href="/portal-cliente/entregas"
               className="text-xs text-primary hover:underline font-mono"
             >
-              Ver todos →
+              Ver todos ({clientTasks.length}) →
             </Link>
           </div>
 
           <div className="space-y-2.5">
-            {deliveredTasks.slice(0, 6).map((t, idx) => (
-              <div
-                key={t.id}
-                className="p-3 bg-[#181818] border border-[#242424] rounded flex items-center justify-between gap-3 text-xs"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-on-surface truncate">{t.title}</h4>
-                    <span className="text-[10px] font-mono text-on-surface-variant">
-                      Entregue em {formatDate(t.dueDate)} • {t.taskType}
-                    </span>
-                  </div>
-                </div>
-
-                {t.isExtra ? (
-                  <span className="text-[9px] font-mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded uppercase shrink-0">
-                    Extra Solicitado
-                  </span>
-                ) : (
-                  <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded uppercase shrink-0">
-                    Cota Mensal
-                  </span>
-                )}
+            {clientTasks.length === 0 ? (
+              <div className="p-8 text-center text-xs font-mono text-on-surface-variant">
+                Nenhum conteúdo registrado para o cliente no momento.
               </div>
-            ))}
+            ) : (
+              clientTasks.slice(0, 8).map((t, idx) => {
+                const isApproved = ['APPROVED', 'PUBLISHED'].includes(t.status);
+                const isReview = ['CLIENT_REVIEW', 'IN_REVIEW'].includes(t.status);
+
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setSelectedTaskForReview(t)}
+                    className="p-3 bg-[#181818] hover:bg-[#202020] border border-[#242424] hover:border-primary/50 rounded-lg flex items-center justify-between gap-3 text-xs cursor-pointer transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-on-surface truncate">{t.title}</h4>
+                        <span className="text-[10px] font-mono text-on-surface-variant">
+                          {formatDate(t.dueDate)} • {t.taskType}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {t.isExtra && (
+                        <span className="text-[9px] font-mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded uppercase">
+                          Extra
+                        </span>
+                      )}
+
+                      {isApproved ? (
+                        <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Aprovado
+                        </span>
+                      ) : isReview ? (
+                        <span className="text-[9px] font-mono text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded uppercase flex items-center gap-1 font-bold">
+                          <Clock className="w-3 h-3" /> Revisar
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono text-zinc-400 bg-[#222] border border-[#333] px-2 py-0.5 rounded uppercase">
+                          Em Produção
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -263,149 +342,43 @@ export default function ClientPortalDashboard() {
 
           <div className="space-y-3 font-mono text-xs">
             <div className="flex justify-between py-1 border-b border-[#222]">
-              <span className="text-on-surface-variant">Plano Mensal (12 vídeos):</span>
+              <span className="text-on-surface-variant">Plano Mensal ({client.contractedVideos} vídeos):</span>
               <span className="font-bold text-on-surface">{formatCurrency(quotas.baseMonthlyFee)}</span>
             </div>
 
             <div className="flex justify-between py-1 border-b border-[#222]">
-              <span className="text-primary font-semibold">3 Vídeos Extras (@ R$ 150):</span>
+              <span className="text-primary font-semibold">{quotas.extraVideos} Vídeos Extras (@ R$ {client.extraVideoPrice || 150}):</span>
               <span className="font-bold text-primary">+{formatCurrency(quotas.totalExtrasCost)}</span>
             </div>
 
             <div className="flex justify-between py-2 font-bold text-sm bg-[#1a1a1a] p-2 rounded">
-              <span>Total de Agosto:</span>
+              <span>Total Estimado:</span>
               <span className="text-primary font-mono">{formatCurrency(quotas.grandTotalCost)}</span>
             </div>
 
             <div className="pt-2 text-[11px] text-on-surface-variant leading-relaxed">
               <span className="font-bold text-on-surface block mb-1">Regra de Extras:</span>
-              Os vídeos solicitados além dos 12 contratados são calculados a R$ 150/unidade e adicionados à sua fatura mensal.
+              Os vídeos solicitados além dos {client.contractedVideos} contratados são calculados a R$ {client.extraVideoPrice || 150}/unidade e adicionados à sua fatura mensal.
             </div>
 
-            <button
-              onClick={() => setIsRequestModalOpen(true)}
-              className="w-full bg-[#201f1f] hover:bg-[#2a2a2a] border border-[#333] text-on-surface text-xs font-mono font-bold py-2.5 rounded transition-all mt-2"
+            <Link
+              href="/portal-cliente/solicitacoes"
+              className="block text-center w-full bg-[#201f1f] hover:bg-[#2a2a2a] border border-[#333] text-on-surface text-xs font-mono font-bold py-2.5 rounded transition-all mt-2"
             >
               + Solicitar Mais Vídeos
-            </button>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Modal Solicitação de Serviço Extra */}
-      <Modal
-        isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
-        title="Solicitar Novo Serviço Extra"
-        subtitle={`Cliente: ${client.companyName} • Cálculo de valor automático`}
-      >
-        <form onSubmit={handleSendRequest} className="space-y-4 text-sm">
-          <div>
-            <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
-              Tipo de Conteúdo / Serviço
-            </label>
-            <select
-              value={requestForm.serviceType}
-              onChange={(e) =>
-                setRequestForm({ ...requestForm, serviceType: e.target.value as any })
-              }
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none cursor-pointer"
-            >
-              <option value="VIDEO">Vídeo Extra (R$ {client.extraVideoPrice || 150}/unid)</option>
-              <option value="PHOTO">Foto Extra (R$ {client.extraPhotoPrice || 80}/unid)</option>
-              <option value="EVENT">Cobertura de Evento (R$ {client.extraEventPrice || 500})</option>
-              <option value="DAILY">Diária de Produção (R$ {client.extraDailyPrice || 300})</option>
-            </select>
-          </div>
+      {/* Media Approval Modal for reviewing videos */}
+      <MediaApprovalModal
+        isOpen={Boolean(selectedTaskForReview)}
+        onClose={() => setSelectedTaskForReview(null)}
+        task={selectedTaskForReview}
+      />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
-                Quantidade
-              </label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={requestForm.quantity}
-                onChange={(e) =>
-                  setRequestForm({ ...requestForm, quantity: Number(e.target.value) })
-                }
-                className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
-                Data Desejada
-              </label>
-              <input
-                type="date"
-                required
-                value={requestForm.desiredDate}
-                onChange={(e) =>
-                  setRequestForm({ ...requestForm, desiredDate: e.target.value })
-                }
-                className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Automatic Calculation Preview */}
-          <div className="p-3 rounded bg-[#181818] border border-primary/30 flex items-center justify-between font-mono">
-            <div>
-              <span className="text-[10px] text-on-surface-variant uppercase block">
-                Cálculo Estimado:
-              </span>
-              <span className="text-xs text-on-surface">
-                {requestForm.quantity}x de {formatCurrency(getUnitPrice(requestForm.serviceType))}
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] text-primary uppercase block font-bold">
-                Valor Total Extra:
-              </span>
-              <span className="text-lg font-black text-primary">
-                {formatCurrency(calculatedTotal)}
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono uppercase text-on-surface-variant mb-1">
-              Descrição / Briefing do Pedido
-            </label>
-            <textarea
-              rows={3}
-              required
-              placeholder="Explique o tema do vídeo, objetivo e onde será veiculado..."
-              value={requestForm.description}
-              onChange={(e) =>
-                setRequestForm({ ...requestForm, description: e.target.value })
-              }
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#262626]">
-            <button
-              type="button"
-              onClick={() => setIsRequestModalOpen(false)}
-              className="px-4 py-2 rounded bg-transparent border border-[#2a2a2a] text-on-surface text-xs font-mono"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded bg-primary hover:bg-primary-hover text-white text-xs font-mono font-bold shadow"
-            >
-              Enviar para Aprovação
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Modal PIX */}
+      {/* Pix Payment Modal */}
       <PixPaymentModal
         isOpen={isPixModalOpen}
         onClose={() => setIsPixModalOpen(false)}
