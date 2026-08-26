@@ -219,7 +219,7 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
             />
             <div className="hidden sm:flex flex-col items-start text-left">
               <span className="text-xs font-bold text-on-surface leading-tight">
-                {user?.fullName || 'Lucas Antunes'}
+                {user?.fullName || 'Lucas'}
               </span>
               <span className="text-[10px] font-mono text-on-surface-variant">
                 @{user?.username || user?.email.split('@')[0] || 'admin'}

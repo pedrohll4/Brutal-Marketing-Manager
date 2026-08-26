@@ -317,7 +317,7 @@ Brutal Marketing`.trim();
         <div className="pt-8 border-t border-[#262626] print:border-zinc-400 grid grid-cols-2 gap-8 text-center font-mono text-xs text-on-surface-variant print:text-zinc-600">
           <div>
             <div className="border-b border-[#444] print:border-black mb-2 pb-8" />
-            <p className="font-bold text-on-surface print:text-black">Lucas Antunes</p>
+            <p className="font-bold text-on-surface print:text-black">Lucas</p>
             <p className="text-[10px]">Diretor Geral • Brutal Marketing</p>
           </div>
 
