@@ -37,11 +37,11 @@ export function MetricsBento() {
         </div>
         <div>
           <span className="text-2xl font-bold text-on-surface block tracking-tight">
-            {activeClientsCount || 142}
+            {activeClientsCount}
           </span>
           <div className="flex items-center gap-1 mt-1 text-[11px] text-green-400 font-mono">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>+12% este mês</span>
+            <span>{activeClientsCount > 0 ? 'base ativa' : 'nenhum cliente'}</span>
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@ export function MetricsBento() {
         </div>
         <div className="relative z-10">
           <span className="text-2xl font-bold text-on-surface block tracking-tight">
-            {activeCampaignsCount || 28}
+            {activeCampaignsCount}
           </span>
           <div className="flex items-center gap-1 mt-1 text-[11px] text-on-surface-variant font-mono">
             <span>em andamento</span>
@@ -75,11 +75,11 @@ export function MetricsBento() {
         </div>
         <div>
           <span className="text-2xl font-bold text-on-surface block tracking-tight">
-            {pendingTasks.length || 56}
+            {pendingTasks.length}
           </span>
           <div className="flex items-center gap-1 mt-1 text-[11px] text-amber-400 font-mono">
             <AlertTriangle className="w-3.5 h-3.5" />
-            <span>{urgentTasksCount || 12} urgentes</span>
+            <span>{urgentTasksCount} urgentes</span>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function MetricsBento() {
         </div>
         <div>
           <span className="text-2xl font-bold text-on-surface block tracking-tight">
-            {completedVideosThisMonth || 34}
+            {completedVideosThisMonth}
           </span>
           <div className="flex items-center gap-1 mt-1 text-[11px] text-on-surface-variant font-mono">
             <span>este mês</span>
@@ -114,11 +114,11 @@ export function MetricsBento() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <span className="text-2xl md:text-3xl font-black text-on-surface block tracking-tight">
-                {formatCurrency(totalRevenueExpected || 485200)}
+                {formatCurrency(totalRevenueExpected)}
               </span>
               <div className="flex items-center gap-1 mt-1 text-[11px] text-green-400 font-mono">
                 <TrendingUp className="w-3.5 h-3.5" />
-                <span>+8.4% vs mês ant.</span>
+                <span>faturas ativas</span>
               </div>
             </div>
             <div className="text-right">
@@ -126,7 +126,7 @@ export function MetricsBento() {
                 Valores em aberto
               </span>
               <span className="text-sm md:text-base font-bold text-red-400 font-mono">
-                {formatCurrency(totalOpenRevenue || 42100)}
+                {formatCurrency(totalOpenRevenue)}
               </span>
             </div>
           </div>
@@ -142,7 +142,7 @@ export function MetricsBento() {
             </div>
             <div>
               <span className="text-2xl font-bold text-on-surface block tracking-tight">
-                {tasks.filter((t) => t.status === 'IN_PRODUCTION').length || 8}
+                {tasks.filter((t) => t.status === 'IN_PRODUCTION').length}
               </span>
               <div className="flex items-center gap-1 mt-1 text-[11px] text-blue-400 font-mono">
                 <span>em produção</span>
@@ -159,7 +159,7 @@ export function MetricsBento() {
             </div>
             <div>
               <span className="text-2xl font-bold text-on-surface block tracking-tight">
-                {tasks.filter((t) => t.status === 'IN_REVIEW').length || 5}
+                {tasks.filter((t) => t.status === 'IN_REVIEW').length}
               </span>
               <div className="flex items-center gap-1 mt-1 text-[11px] text-amber-400 font-mono">
                 <span>aguardando aprovação</span>

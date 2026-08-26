@@ -22,6 +22,7 @@ import {
   syncInvoiceToSupabase,
   syncProfileToSupabase,
 } from '@/lib/supabase/syncService';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 export interface ToastMessage {
   id: string;
@@ -93,15 +94,15 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const [adminWhatsApp, setAdminWhatsApp] = useState<string>('(16) 99123-4567');
   const [pixKey, setPixKey] = useState<string>('financeiro@brutalmarketing.com.br');
   const [pixBeneficiary, setPixBeneficiary] = useState<string>('Brutal Marketing Ltda');
-  const [clients, setClients] = useState<Client[]>(mockClients);
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(mockCalendarEvents);
-  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(mockServiceRequests);
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
-  const [monthlyReports] = useState<MonthlyReport[]>(mockMonthlyReports);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(mockNotifications);
+  const [clients, setClients] = useState<Client[]>(isSupabaseConfigured ? [] : mockClients);
+  const [employees, setEmployees] = useState<Employee[]>(isSupabaseConfigured ? [] : mockEmployees);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(isSupabaseConfigured ? [] : mockCampaigns);
+  const [tasks, setTasks] = useState<Task[]>(isSupabaseConfigured ? [] : mockTasks);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(isSupabaseConfigured ? [] : mockCalendarEvents);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(isSupabaseConfigured ? [] : mockServiceRequests);
+  const [invoices, setInvoices] = useState<Invoice[]>(isSupabaseConfigured ? [] : mockInvoices);
+  const [monthlyReports] = useState<MonthlyReport[]>(isSupabaseConfigured ? [] : mockMonthlyReports);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // ────────────────────────────────────────────────────────────

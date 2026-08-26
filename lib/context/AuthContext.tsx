@@ -260,53 +260,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 4. Check mockClients (e.g. carlos@techrush.com.br, etc.)
-    const mockCli = mockClients.find(
-      (c) =>
-        c.email.toLowerCase() === cleanId ||
-        (c.username && c.username.toLowerCase() === cleanId) ||
-        c.email.split('@')[0].toLowerCase() === cleanId ||
-        c.companyName.toLowerCase().replace(/\s+/g, '') === cleanId
-    );
-    if (mockCli) {
-      if (!matchPassword(mockCli.password || 'procampo', cleanPass)) {
-        return { success: false, error: 'Senha incorreta.' };
+    // 4. Check mockClients ONLY when Supabase is NOT configured (offline demo mode)
+    if (!isSupabaseConfigured) {
+      const mockCli = mockClients.find(
+        (c) =>
+          c.email.toLowerCase() === cleanId ||
+          (c.username && c.username.toLowerCase() === cleanId) ||
+          c.email.split('@')[0].toLowerCase() === cleanId ||
+          c.companyName.toLowerCase().replace(/\s+/g, '') === cleanId
+      );
+      if (mockCli) {
+        if (!matchPassword(mockCli.password || 'procampo', cleanPass)) {
+          return { success: false, error: 'Senha incorreta.' };
+        }
+        const profile: UserProfile = {
+          id: mockCli.id,
+          email: mockCli.email,
+          username: mockCli.username || mockCli.email.split('@')[0],
+          fullName: mockCli.name || mockCli.companyName,
+          role: 'CLIENT',
+          avatarUrl: mockCli.logoUrl,
+          clientId: mockCli.id,
+        };
+        saveSession(profile);
+        return { success: true, role: 'CLIENT' };
       }
-      const profile: UserProfile = {
-        id: mockCli.id,
-        email: mockCli.email,
-        username: mockCli.username || mockCli.email.split('@')[0],
-        fullName: mockCli.name || mockCli.companyName,
-        role: 'CLIENT',
-        avatarUrl: mockCli.logoUrl,
-        clientId: mockCli.id,
-      };
-      saveSession(profile);
-      return { success: true, role: 'CLIENT' };
-    }
 
-    // 5. Check mockEmployees (e.g. joao, mariana, etc.)
-    const mockEmp = mockEmployees.find(
-      (e) =>
-        e.email.toLowerCase() === cleanId ||
-        (e.username && e.username.toLowerCase() === cleanId) ||
-        e.email.split('@')[0].toLowerCase() === cleanId
-    );
-    if (mockEmp) {
-      if (!matchPassword(mockEmp.password || 'joao', cleanPass)) {
-        return { success: false, error: 'Senha incorreta.' };
+      // 5. Check mockEmployees ONLY when Supabase is NOT configured
+      const mockEmp = mockEmployees.find(
+        (e) =>
+          e.email.toLowerCase() === cleanId ||
+          (e.username && e.username.toLowerCase() === cleanId) ||
+          e.email.split('@')[0].toLowerCase() === cleanId
+      );
+      if (mockEmp) {
+        if (!matchPassword(mockEmp.password || 'joao', cleanPass)) {
+          return { success: false, error: 'Senha incorreta.' };
+        }
+        const profile: UserProfile = {
+          id: mockEmp.id,
+          email: mockEmp.email,
+          username: mockEmp.username || mockEmp.email.split('@')[0],
+          fullName: mockEmp.name,
+          role: 'EMPLOYEE',
+          avatarUrl: mockEmp.avatarUrl,
+          employeeId: mockEmp.id,
+        };
+        saveSession(profile);
+        return { success: true, role: 'EMPLOYEE' };
       }
-      const profile: UserProfile = {
-        id: mockEmp.id,
-        email: mockEmp.email,
-        username: mockEmp.username || mockEmp.email.split('@')[0],
-        fullName: mockEmp.name,
-        role: 'EMPLOYEE',
-        avatarUrl: mockEmp.avatarUrl,
-        employeeId: mockEmp.id,
-      };
-      saveSession(profile);
-      return { success: true, role: 'EMPLOYEE' };
     }
 
     return {

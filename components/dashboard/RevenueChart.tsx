@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,16 +14,24 @@ import {
 } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 
-const financialData = [
-  { month: 'Mar', recorrente: 120000, extras: 15400 },
-  { month: 'Abr', recorrente: 135000, extras: 18900 },
-  { month: 'Mai', recorrente: 142000, extras: 24500 },
-  { month: 'Jun', recorrente: 150000, extras: 31000 },
-  { month: 'Jul', recorrente: 165000, extras: 38200 },
-  { month: 'Ago', recorrente: 180000, extras: 45600 },
-];
-
 export function RevenueChart() {
+  const { clients, invoices } = useSystemStore();
+
+  const totalBaseFee = clients
+    .filter((c) => c.status === 'ACTIVE')
+    .reduce((sum, c) => sum + (c.monthlyFee || 0), 0);
+
+  const totalExtrasRevenue = invoices.reduce((sum, inv) => sum + (inv.extrasAmount || 0), 0);
+
+  const financialData = [
+    { month: 'Mar', recorrente: 0, extras: 0 },
+    { month: 'Abr', recorrente: 0, extras: 0 },
+    { month: 'Mai', recorrente: 0, extras: 0 },
+    { month: 'Jun', recorrente: 0, extras: 0 },
+    { month: 'Jul', recorrente: 0, extras: 0 },
+    { month: 'Ago', recorrente: totalBaseFee, extras: totalExtrasRevenue },
+  ];
+
   return (
     <div className="brutal-card p-6 rounded-lg flex flex-col h-full">
       <div className="flex justify-between items-start mb-6">
@@ -43,7 +52,7 @@ export function RevenueChart() {
               stroke="#666"
               fontSize={11}
               tickLine={false}
-              tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => (v >= 1000 ? `R$ ${(v / 1000).toFixed(0)}k` : `R$ ${v}`)}
             />
             <Tooltip
               formatter={(value: any) => [formatCurrency(Number(value)), '']}

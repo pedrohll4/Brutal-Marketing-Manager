@@ -41,35 +41,41 @@ export function ActivityFeed() {
       </div>
 
       <div className="space-y-4">
-        {notifications.slice(0, 5).map((item) => (
-          <div
-            key={item.id}
-            className="flex items-start gap-3.5 p-3 rounded bg-[#181818] border border-[#262626] hover:border-[#353534] transition-colors"
-          >
-            <div className="p-2 rounded bg-[#201f1f] border border-[#2a2a2a] shrink-0">
-              {getIcon(item.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start gap-2 mb-1">
-                <h4 className="text-sm font-semibold text-on-surface truncate">{item.title}</h4>
-                <span className="text-[10px] font-mono text-on-surface-variant shrink-0">
-                  {item.createdAt}
-                </span>
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">
-                {item.message}
-              </p>
-            </div>
-            {item.link && (
-              <Link
-                href={item.link}
-                className="p-1.5 rounded hover:bg-[#262626] text-on-surface-variant hover:text-primary transition-colors shrink-0"
-              >
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            )}
+        {notifications.length === 0 ? (
+          <div className="p-6 text-center rounded bg-[#161616] border border-[#262626] text-on-surface-variant font-mono text-xs">
+            Nenhuma atividade recente no momento. Quando sua equipe criar tarefas ou clientes aprovarem vídeos, as notificações aparecerão aqui em tempo real.
           </div>
-        ))}
+        ) : (
+          notifications.slice(0, 5).map((item) => (
+            <div
+              key={item.id}
+              className="flex items-start gap-3.5 p-3 rounded bg-[#181818] border border-[#262626] hover:border-[#353534] transition-colors"
+            >
+              <div className="p-2 rounded bg-[#201f1f] border border-[#2a2a2a] shrink-0">
+                {getIcon(item.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2 mb-1">
+                  <h4 className="text-sm font-semibold text-on-surface truncate">{item.title}</h4>
+                  <span className="text-[10px] font-mono text-on-surface-variant shrink-0">
+                    {item.createdAt}
+                  </span>
+                </div>
+                <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">
+                  {item.message}
+                </p>
+              </div>
+              {item.link && (
+                <Link
+                  href={item.link}
+                  className="p-1.5 rounded hover:bg-[#262626] text-on-surface-variant hover:text-primary transition-colors shrink-0"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

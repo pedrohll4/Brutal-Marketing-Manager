@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSystemStore } from '@/lib/context/SystemStoreContext';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -11,16 +12,21 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-const data = [
-  { month: 'Mar', contratado: 45, entregue: 45, extras: 6 },
-  { month: 'Abr', contratado: 50, entregue: 48, extras: 8 },
-  { month: 'Mai', contratado: 55, entregue: 55, extras: 12 },
-  { month: 'Jun', contratado: 60, entregue: 58, extras: 14 },
-  { month: 'Jul', contratado: 65, entregue: 65, extras: 18 },
-  { month: 'Ago', contratado: 72, entregue: 72, extras: 24 },
-];
-
 export function ProductionChart() {
+  const { tasks } = useSystemStore();
+
+  const deliveredThisMonth = tasks.filter((t) => ['APPROVED', 'PUBLISHED'].includes(t.status)).length;
+  const extrasThisMonth = tasks.filter((t) => t.isExtra).length;
+
+  const data = [
+    { month: 'Mar', entregue: 0, extras: 0 },
+    { month: 'Abr', entregue: 0, extras: 0 },
+    { month: 'Mai', entregue: 0, extras: 0 },
+    { month: 'Jun', entregue: 0, extras: 0 },
+    { month: 'Jul', entregue: 0, extras: 0 },
+    { month: 'Ago', entregue: deliveredThisMonth, extras: extrasThisMonth },
+  ];
+
   return (
     <div className="brutal-card p-6 rounded-lg flex flex-col h-full">
       <div className="flex justify-between items-start mb-6">
@@ -57,7 +63,7 @@ export function ProductionChart() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
             <XAxis dataKey="month" stroke="#666" fontSize={12} tickLine={false} />
-            <YAxis stroke="#666" fontSize={12} tickLine={false} />
+            <YAxis stroke="#666" fontSize={12} tickLine={false} allowDecimals={false} />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#181818',
