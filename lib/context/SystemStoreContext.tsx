@@ -272,20 +272,49 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   };
 
   const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
+    let taskName = 'Conteúdo';
+    let clientName = 'Cliente';
+
     setTasks((prev) => {
       const task = prev.find((t) => t.id === taskId);
       if (!task) return prev;
+      taskName = task.title;
+      clientName = task.clientName;
+
       const completedAt =
         ['APPROVED', 'PUBLISHED'].includes(newStatus) && !task.completedAt
           ? new Date().toISOString()
           : task.completedAt;
-      const updated = prev.map((t) => t.id === taskId ? { ...t, status: newStatus, completedAt } : t);
+      const updated = prev.map((t) => (t.id === taskId ? { ...t, status: newStatus, completedAt } : t));
       const modified = updated.find((t) => t.id === taskId);
       if (modified) syncTaskToSupabase(modified);
       return updated;
     });
-    if (newStatus === 'PUBLISHED') {
-      addToast({ title: 'Conteúdo Publicado! 🎉', description: 'Entrega computada na cota do cliente.', type: 'success' });
+
+    if (newStatus === 'APPROVED') {
+      setNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          title: '🎬 Vídeo Aprovado pelo Cliente!',
+          message: `${clientName} aprovou "${taskName}". Pronto para publicação e agendamento!`,
+          link: '/producao',
+          type: 'APPROVAL',
+          isRead: false,
+          createdAt: 'Agora mesmo',
+        },
+        ...prev,
+      ]);
+      addToast({
+        title: 'Vídeo Aprovado! 🎉',
+        description: `"${taskName}" foi aprovado com sucesso e a equipe foi notificada!`,
+        type: 'success',
+      });
+    } else if (newStatus === 'PUBLISHED') {
+      addToast({
+        title: 'Conteúdo Publicado! 🚀',
+        description: 'Entrega computada na cota do cliente.',
+        type: 'success',
+      });
     }
   };
 

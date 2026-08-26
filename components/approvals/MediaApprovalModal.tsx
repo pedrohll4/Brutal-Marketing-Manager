@@ -157,13 +157,7 @@ export function MediaApprovalModal({ isOpen, onClose, task }: MediaApprovalModal
       user?.role || 'CLIENT'
     );
     notifyVideoApproved(user?.fullName || 'Cliente', task.title).catch(() => {});
-    addToast({
-      title: 'Conteúdo Aprovado! 🎉',
-      description: `"${task.title}" foi aprovado. A IA gerou a legenda para postagem!`,
-      type: 'success',
-    });
-    // Automatically trigger AI copywriter generator!
-    setShowAICopy(true);
+    onClose();
   };
 
   const handleRequestAdjustments = () => {
