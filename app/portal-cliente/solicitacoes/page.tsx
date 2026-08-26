@@ -18,7 +18,18 @@ import {
   Video,
   Plane,
   Check,
+  Zap,
+  TrendingUp,
+  Receipt,
+  ArrowUpRight,
 } from 'lucide-react';
+import {
+  ClientServiceCatalogSection,
+  ClientServiceRequestModal,
+  PRESET_SERVICES,
+} from '@/components/requests/ClientServiceCatalogAndModal';
+import { ServiceType } from '@/lib/types';
+import Link from 'next/link';
 
 export default function ClientSolicitacoesPage() {
   const { clients, serviceRequests, addServiceRequest } = useSystemStore();
@@ -36,428 +47,337 @@ export default function ClientSolicitacoesPage() {
 
   const clientRequests = serviceRequests.filter((r) => r.clientId === client.id);
 
-  // Selected Service Template
-  const [selectedService, setSelectedService] = useState<'VIDEO' | 'PHOTO' | 'EVENT' | 'DAILY' | 'OTHER'>('EVENT');
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  // Tab State: 'CATALOG' | 'HISTORY' | 'STATS'
+  const [activeTab, setActiveTab] = useState<'CATALOG' | 'HISTORY' | 'STATS'>('CATALOG');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedServiceForModal, setSelectedServiceForModal] = useState<ServiceType>('VIDEO');
 
-  // Form Fields
-  const [form, setForm] = useState({
-    quantity: 1,
-    desiredDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-    description: '',
-    // Event specific fields
-    eventName: '',
-    eventLocation: '',
-    eventStartTime: '08:30',
-    eventEndTime: '18:00',
-    requiresDrone: false,
-    // Video specific
-    videoFormat: 'Reels / TikTok (9:16) + Comercial 4K',
-    // Photo specific
-    photoType: 'Fotos de Estande, Clientes e Diretoria',
-  });
+  // Stats
+  const approvedRequests = clientRequests.filter((r) => r.status === 'APPROVED');
+  const pendingRequests = clientRequests.filter((r) => r.status === 'PENDING');
+  const totalSpentExtras = approvedRequests.reduce((acc, r) => acc + (r.totalEstimated || 0), 0);
 
-  const getUnitPrice = (type: string) => {
-    switch (type) {
-      case 'VIDEO':
-        return client.extraVideoPrice || 150;
-      case 'PHOTO':
-        return client.extraPhotoPrice || 80;
-      case 'EVENT':
-        return client.extraEventPrice || 500;
-      case 'DAILY':
-        return client.extraDailyPrice || 300;
-      default:
-        return 150;
-    }
-  };
-
-  const unitPrice = getUnitPrice(selectedService);
-  const calculatedTotal = unitPrice * form.quantity;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    let fullDescription = form.description;
-    if (selectedService === 'EVENT') {
-      fullDescription = `[Evento: ${form.eventName || 'Cobertura de Evento'}] ${form.description} | Local: ${form.eventLocation || 'A definir'} | Horário: ${form.eventStartTime} às ${form.eventEndTime} ${form.requiresDrone ? '| [Requer Drone]' : ''}`;
-    } else if (selectedService === 'VIDEO') {
-      fullDescription = `[Formato: ${form.videoFormat}] ${form.description}`;
-    } else if (selectedService === 'PHOTO') {
-      fullDescription = `[Tipo: ${form.photoType}] ${form.description}`;
-    }
-
-    addServiceRequest({
-      clientId: client.id,
-      clientName: client.companyName || client.name,
-      serviceType: selectedService,
-      quantity: Number(form.quantity),
-      unitPrice,
-      totalEstimated: calculatedTotal,
-      desiredDate: form.desiredDate,
-      description: fullDescription,
-      eventLocation: selectedService === 'EVENT' ? form.eventLocation : undefined,
-      eventStartTime: selectedService === 'EVENT' ? form.eventStartTime : undefined,
-      eventEndTime: selectedService === 'EVENT' ? form.eventEndTime : undefined,
-      requiresDrone: selectedService === 'EVENT' ? form.requiresDrone : undefined,
-      videoFormat: selectedService === 'VIDEO' ? form.videoFormat : undefined,
-      photoType: selectedService === 'PHOTO' ? form.photoType : undefined,
-    });
-
-    setShowSuccessBanner(true);
-    setTimeout(() => setShowSuccessBanner(false), 6000);
-
-    setForm({
-      quantity: 1,
-      desiredDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      description: '',
-      eventName: '',
-      eventLocation: '',
-      eventStartTime: '08:30',
-      eventEndTime: '18:00',
-      requiresDrone: false,
-      videoFormat: 'Reels / TikTok (9:16)',
-      photoType: 'Fotos de Produto / Retratos',
-    });
+  const handleOpenModal = (type: ServiceType = 'VIDEO') => {
+    setSelectedServiceForModal(type);
+    setIsModalOpen(true);
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl md:text-3xl font-black text-on-surface">
-          Solicitar Serviços Extras & Cobertura de Eventos
-        </h2>
-        <p className="text-xs text-on-surface-variant font-mono mt-1">
-          Peça gravações extras, ensaios fotográficos, vídeos ou cobertura com drone diretamente para a equipe Brutal
-        </p>
+    <div className="space-y-7 max-w-5xl mx-auto">
+      {/* Header with Title and Quick Nav Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#262626] pb-5">
+        <div>
+          <span className="text-xs font-mono text-primary uppercase font-bold tracking-wider">
+            Serviços Adicionais • {client.companyName}
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-on-surface mt-1">
+            Central de Solicitações & Extras
+          </h2>
+          <p className="text-xs text-on-surface-variant font-mono mt-1">
+            Peça novas diárias, vídeos em 4K, ensaios fotográficos e cobertura de eventos com valores fixados
+          </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#181818] border border-[#2c2c2c] rounded-xl font-mono text-xs self-start sm:self-auto">
+          <button
+            onClick={() => setActiveTab('CATALOG')}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'CATALOG'
+                ? 'bg-primary text-white shadow'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Fazer Pedido</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('HISTORY')}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'HISTORY'
+                ? 'bg-primary text-white shadow'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Histórico ({clientRequests.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('STATS')}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'STATS'
+                ? 'bg-primary text-white shadow'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Extrato</span>
+          </button>
+        </div>
       </div>
 
-      {/* Success Banner */}
-      {showSuccessBanner && (
-        <div className="p-4 bg-emerald-950/60 border border-emerald-700/60 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="p-2 bg-emerald-600 text-white rounded-lg">
-            <Check className="w-5 h-5" />
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {/* TAB 1: CATALOG & HERO ACTION (DEFAULT) */}
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {activeTab === 'CATALOG' && (
+        <div className="space-y-6">
+          {/* Giant Hero Banner */}
+          <ClientServiceCatalogSection client={client} />
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="brutal-card p-4 rounded-xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-mono text-on-surface-variant block">
+                  Em Análise
+                </span>
+                <strong className="text-xl font-bold font-mono text-on-surface">
+                  {pendingRequests.length} solicitações
+                </strong>
+              </div>
+            </div>
+
+            <div className="brutal-card p-4 rounded-xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-mono text-on-surface-variant block">
+                  Aprovados & Na Esteira
+                </span>
+                <strong className="text-xl font-bold font-mono text-on-surface">
+                  {approvedRequests.length} entregas extras
+                </strong>
+              </div>
+            </div>
+
+            <div className="brutal-card p-4 rounded-xl flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center border border-primary/30 shrink-0">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-mono text-on-surface-variant block">
+                  Total em Extras Aprovados
+                </span>
+                <strong className="text-xl font-bold font-mono text-primary">
+                  {formatCurrency(totalSpentExtras)}
+                </strong>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="font-bold text-sm text-emerald-300">Solicitação Enviada com Sucesso!</h4>
-            <p className="text-xs text-emerald-400 font-mono mt-0.5">
-              Seu pedido foi registrado em nossa esteira e nossa equipe foi notificada para análise.
-            </p>
+
+          {/* Recent 3 Requests Snippet */}
+          {clientRequests.length > 0 && (
+            <div className="brutal-card p-5 rounded-xl space-y-3">
+              <div className="flex justify-between items-center border-b border-[#262626] pb-2">
+                <h3 className="text-xs font-bold font-mono uppercase text-on-surface">
+                  Últimos Pedidos Solicitados
+                </h3>
+                <button
+                  onClick={() => setActiveTab('HISTORY')}
+                  className="text-xs text-primary hover:underline font-mono"
+                >
+                  Ver todos os {clientRequests.length} →
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {clientRequests.slice(0, 3).map((req) => (
+                  <div
+                    key={req.id}
+                    className="p-3 bg-[#181818] border border-[#282828] rounded-lg flex items-center justify-between gap-3 text-xs font-mono"
+                  >
+                    <div>
+                      <strong className="text-on-surface">
+                        {req.quantity}x {req.serviceType}
+                      </strong>
+                      <span className="text-on-surface-variant text-[11px] block mt-0.5 font-sans line-clamp-1">
+                        {req.description}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-primary font-bold">
+                        {formatCurrency(req.totalEstimated)}
+                      </span>
+                      {req.status === 'APPROVED' ? (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2 py-0.5 rounded">
+                          Aprovado
+                        </span>
+                      ) : req.status === 'PENDING' ? (
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-950/50 border border-amber-800/40 px-2 py-0.5 rounded">
+                          Pendente
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-red-400 bg-red-950/50 border border-red-800/40 px-2 py-0.5 rounded">
+                          Recusado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {/* TAB 2: FULL HISTORY */}
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {activeTab === 'HISTORY' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-on-surface font-mono uppercase">
+              Histórico de Solicitações ({clientRequests.length})
+            </h3>
+            <button
+              onClick={() => handleOpenModal('VIDEO')}
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-mono font-bold text-xs rounded-lg flex items-center gap-1.5 shadow"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Novo Pedido</span>
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {clientRequests.length === 0 ? (
+              <div className="p-12 bg-[#161616] border border-[#262626] rounded-xl text-center space-y-3 font-mono">
+                <Sparkles className="w-8 h-8 text-primary mx-auto opacity-60" />
+                <h4 className="text-sm font-bold text-on-surface">Nenhuma solicitação registrada</h4>
+                <p className="text-xs text-on-surface-variant max-w-sm mx-auto">
+                  Você ainda não solicitou serviços extras este mês. Clique abaixo para fazer seu primeiro pedido!
+                </p>
+                <button
+                  onClick={() => handleOpenModal('VIDEO')}
+                  className="mt-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-lg uppercase tracking-wider"
+                >
+                  + Fazer Solicitação
+                </button>
+              </div>
+            ) : (
+              clientRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="p-5 bg-[#161616] border border-[#282828] hover:border-[#3a3a3a] rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-xs font-mono transition-all"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-on-surface text-base">
+                        {req.quantity}x {req.serviceType}
+                      </span>
+                      <span className="text-primary font-bold text-sm">
+                        • {formatCurrency(req.totalEstimated)}
+                      </span>
+                    </div>
+                    <p className="text-on-surface-variant text-xs font-sans leading-relaxed">
+                      {req.description}
+                    </p>
+                    <div className="flex items-center gap-3 text-[10px] text-on-surface-variant/70 pt-1">
+                      <span>📅 Data solicitada: {formatDate(req.desiredDate)}</span>
+                      <span>• Enviado em {req.createdAt}</span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    {req.status === 'APPROVED' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-3 py-1.5 rounded-lg">
+                        <CheckCircle2 className="w-4 h-4" /> Aprovado & Na Agenda
+                      </span>
+                    ) : req.status === 'PENDING' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-700/60 px-3 py-1.5 rounded-lg">
+                        <Clock className="w-4 h-4" /> Em Análise pela Equipe
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-950/60 border border-red-700/60 px-3 py-1.5 rounded-lg">
+                        <XCircle className="w-4 h-4" /> Recusado
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
 
-      {/* Main Request Form */}
-      <div className="brutal-card p-6 rounded-xl space-y-6 border border-[#262626]">
-        <div>
-          <h3 className="text-sm font-bold font-mono uppercase text-primary border-b border-[#262626] pb-2">
-            1. Selecione o Tipo de Serviço Desejado
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
-            {/* Option: Event */}
-            <button
-              type="button"
-              onClick={() => setSelectedService('EVENT')}
-              className={`p-4 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                selectedService === 'EVENT'
-                  ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                  : 'bg-[#181818] border-[#2a2a2a] hover:border-[#3a3a3a]'
-              }`}
-            >
-              <div>
-                <Calendar className={`w-6 h-6 mb-2 ${selectedService === 'EVENT' ? 'text-primary' : 'text-on-surface-variant'}`} />
-                <strong className="block text-sm text-on-surface">Cobertura de Evento</strong>
-                <span className="text-[11px] text-on-surface-variant font-mono block mt-1">
-                  Gravações em feiras, lançamentos, estandes e drone
-                </span>
-              </div>
-              <span className="text-xs font-mono font-bold text-primary mt-3 block">
-                {formatCurrency(client.extraEventPrice || 500)} / evento
-              </span>
-            </button>
-
-            {/* Option: Video */}
-            <button
-              type="button"
-              onClick={() => setSelectedService('VIDEO')}
-              className={`p-4 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                selectedService === 'VIDEO'
-                  ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                  : 'bg-[#181818] border-[#2a2a2a] hover:border-[#3a3a3a]'
-              }`}
-            >
-              <div>
-                <Film className={`w-6 h-6 mb-2 ${selectedService === 'VIDEO' ? 'text-primary' : 'text-on-surface-variant'}`} />
-                <strong className="block text-sm text-on-surface">Vídeo Extra (4K)</strong>
-                <span className="text-[11px] text-on-surface-variant font-mono block mt-1">
-                  Produção e edição de vídeo além da cota contratada
-                </span>
-              </div>
-              <span className="text-xs font-mono font-bold text-primary mt-3 block">
-                {formatCurrency(client.extraVideoPrice || 150)} / vídeo
-              </span>
-            </button>
-
-            {/* Option: Photo */}
-            <button
-              type="button"
-              onClick={() => setSelectedService('PHOTO')}
-              className={`p-4 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                selectedService === 'PHOTO'
-                  ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                  : 'bg-[#181818] border-[#2a2a2a] hover:border-[#3a3a3a]'
-              }`}
-            >
-              <div>
-                <Camera className={`w-6 h-6 mb-2 ${selectedService === 'PHOTO' ? 'text-primary' : 'text-on-surface-variant'}`} />
-                <strong className="block text-sm text-on-surface">Ensaio / Fotos</strong>
-                <span className="text-[11px] text-on-surface-variant font-mono block mt-1">
-                  Sessão fotográfica tratada de produtos ou retratos
-                </span>
-              </div>
-              <span className="text-xs font-mono font-bold text-primary mt-3 block">
-                {formatCurrency(client.extraPhotoPrice || 80)} / foto
-              </span>
-            </button>
-
-            {/* Option: Daily */}
-            <button
-              type="button"
-              onClick={() => setSelectedService('DAILY')}
-              className={`p-4 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                selectedService === 'DAILY'
-                  ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                  : 'bg-[#181818] border-[#2a2a2a] hover:border-[#3a3a3a]'
-              }`}
-            >
-              <div>
-                <Clock className={`w-6 h-6 mb-2 ${selectedService === 'DAILY' ? 'text-primary' : 'text-on-surface-variant'}`} />
-                <strong className="block text-sm text-on-surface">Diária de Gravação</strong>
-                <span className="text-[11px] text-on-surface-variant font-mono block mt-1">
-                  Equipe in loco para captação externa contínua
-                </span>
-              </div>
-              <span className="text-xs font-mono font-bold text-primary mt-3 block">
-                {formatCurrency(client.extraDailyPrice || 300)} / diária
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Dynamic Form based on Selection */}
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2 border-t border-[#262626] text-sm font-mono">
-          <h3 className="text-sm font-bold uppercase text-primary">
-            2. Detalhes & Cronograma do Pedido
-          </h3>
-
-          {/* If Event */}
-          {selectedService === 'EVENT' && (
-            <div className="p-4 rounded-lg bg-[#181818] border border-[#2a2a2a] space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                    Nome do Evento / Ocasião:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Lançamento de Produto / Feira Regional"
-                    value={form.eventName}
-                    onChange={(e) => setForm({ ...form, eventName: e.target.value })}
-                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                    Local / Endereço Completo:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Av. Paulista, 1000 - São Paulo / SP"
-                    value={form.eventLocation}
-                    onChange={(e) => setForm({ ...form, eventLocation: e.target.value })}
-                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                    Horário de Início:
-                  </label>
-                  <input
-                    type="time"
-                    value={form.eventStartTime}
-                    onChange={(e) => setForm({ ...form, eventStartTime: e.target.value })}
-                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                    Horário de Término:
-                  </label>
-                  <input
-                    type="time"
-                    value={form.eventEndTime}
-                    onChange={(e) => setForm({ ...form, eventEndTime: e.target.value })}
-                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex items-center pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface font-bold">
-                    <input
-                      type="checkbox"
-                      checked={form.requiresDrone}
-                      onChange={(e) => setForm({ ...form, requiresDrone: e.target.checked })}
-                      className="rounded text-primary focus:ring-primary bg-[#141414] border-[#333]"
-                    />
-                    <span>Requer Imagens Aéreas com Drone</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Standard Fields: Quantity & Desired Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {/* TAB 3: STATS & FINANCIAL SUMMARY OF EXTRAS */}
+      {/* ───────────────────────────────────────────────────────────────── */}
+      {activeTab === 'STATS' && (
+        <div className="space-y-6">
+          <div className="brutal-card p-6 rounded-xl space-y-6 border border-[#2a2a2a]">
             <div>
-              <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                Quantidade Solicitada:
-              </label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-                className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-              />
+              <span className="text-xs font-mono text-primary uppercase font-bold">Extrato Consolidado</span>
+              <h3 className="text-xl font-bold text-on-surface mt-0.5">
+                Demonstrativo de Serviços Adicionais
+              </h3>
+              <p className="text-xs text-on-surface-variant font-mono mt-1">
+                Acompanhe o impacto dos serviços extras contratados na sua fatura mensal
+              </p>
             </div>
 
-            <div>
-              <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-                Data Desejada / Prazo Limite:
-              </label>
-              <input
-                type="date"
-                required
-                value={form.desiredDate}
-                onChange={(e) => setForm({ ...form, desiredDate: e.target.value })}
-                className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-[#181818] rounded-xl border border-[#282828]">
+                <span className="text-[10px] text-on-surface-variant font-mono uppercase block">
+                  Plano Base Mensal Fixo
+                </span>
+                <strong className="text-2xl font-black text-on-surface font-mono block mt-1">
+                  {formatCurrency(client.monthlyFee)}
+                </strong>
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  Inclui {client.contractedVideos} vídeos + {client.contractedPhotos} fotos
+                </span>
+              </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-xs uppercase text-on-surface-variant mb-1 font-bold">
-              Briefing / Observações da Solicitação:
-            </label>
-            <textarea
-              rows={3}
-              required
-              placeholder="Explique os pontos mais importantes, cronograma ou pessoas que devem ser gravadas/fotografadas..."
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full bg-[#1c1b1b] border border-[#2a2a2a] rounded px-3 py-2 text-on-surface focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          {/* Pricing Summary Box */}
-          <div className="p-4 rounded-lg bg-[#181818] border border-primary/40 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-            <div>
-              <span className="text-[10px] text-on-surface-variant uppercase block">
-                Cálculo do Investimento Extra:
-              </span>
-              <span className="text-xs text-on-surface font-bold">
-                {form.quantity}x de {formatCurrency(unitPrice)}
-              </span>
+              <div className="p-4 bg-[#181818] rounded-xl border border-primary/40">
+                <span className="text-[10px] text-primary font-mono uppercase font-bold block">
+                  Total de Extras Aprovados no Mês
+                </span>
+                <strong className="text-2xl font-black text-primary font-mono block mt-1">
+                  +{formatCurrency(totalSpentExtras)}
+                </strong>
+                <span className="text-[10px] text-emerald-400 font-mono">
+                  {approvedRequests.length} solicitações integradas à esteira
+                </span>
+              </div>
             </div>
 
-            <div className="text-left sm:text-right">
-              <span className="text-[10px] text-primary uppercase font-bold block">
-                Valor Total Estimado:
-              </span>
-              <span className="text-2xl font-black text-primary">
-                {formatCurrency(calculatedTotal)}
-              </span>
-              <span className="text-[9px] text-on-surface-variant block font-normal">
-                (Consolidado no fechamento mensal da sua fatura)
-              </span>
-            </div>
-          </div>
+            {/* Total Estimated Invoice */}
+            <div className="p-5 rounded-xl bg-gradient-to-r from-primary/20 via-[#181818] to-[#141414] border-2 border-primary flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <span className="text-xs uppercase font-mono font-bold text-primary block">
+                  Fatura Total Estimada (Plano + Extras):
+                </span>
+                <span className="text-3xl font-black text-on-surface font-mono block mt-1">
+                  {formatCurrency(client.monthlyFee + totalSpentExtras)}
+                </span>
+              </div>
 
-          <button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary-hover text-white font-black text-xs py-3.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
-          >
-            <Send className="w-4 h-4" />
-            <span>Enviar Solicitação para a Equipe Brutal</span>
-          </button>
-        </form>
-      </div>
-
-      {/* History of Requests */}
-      <div className="space-y-4">
-        <h3 className="text-base font-bold text-on-surface font-mono uppercase">
-          Minhas Solicitações Registradas ({clientRequests.length})
-        </h3>
-
-        <div className="space-y-3">
-          {clientRequests.length === 0 ? (
-            <div className="p-6 bg-[#161616] border border-[#262626] rounded-lg text-center text-xs font-mono text-on-surface-variant">
-              Nenhuma solicitação de serviço extra registrada no momento.
-            </div>
-          ) : (
-            clientRequests.map((req) => (
-              <div
-                key={req.id}
-                className="p-4 bg-[#181818] border border-[#262626] rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs font-mono"
+              <Link
+                href="/portal-cliente/pagamentos"
+                className="px-5 py-3 bg-primary hover:bg-primary-hover text-white font-mono font-bold text-xs rounded-xl shadow flex items-center gap-2"
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-on-surface text-sm">
-                      {req.quantity}x {req.serviceType}
-                    </span>
-                    <span className="text-primary font-bold">
-                      ({formatCurrency(req.totalEstimated)})
-                    </span>
-                  </div>
-                  <p className="text-on-surface-variant text-[11px] leading-relaxed font-sans">
-                    {req.description}
-                  </p>
-                  <span className="text-[10px] text-on-surface-variant/60 block mt-1">
-                    Solicitado em {req.createdAt} • Data Desejada: {formatDate(req.desiredDate)}
-                  </span>
-                </div>
-
-                <div className="shrink-0">
-                  {req.status === 'APPROVED' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1 rounded">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Aprovado & Na Agenda
-                    </span>
-                  ) : req.status === 'PENDING' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded">
-                      <Clock className="w-3.5 h-3.5" /> Em Análise pela Equipe
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-950/40 border border-red-800/40 px-2.5 py-1 rounded">
-                      <XCircle className="w-3.5 h-3.5" /> Recusado
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
+                <span>Ver Faturas & PIX</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Reusable Request Modal */}
+      <ClientServiceRequestModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        client={client}
+        initialServiceType={selectedServiceForModal}
+      />
     </div>
   );
 }

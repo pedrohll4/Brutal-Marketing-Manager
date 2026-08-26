@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import Link from 'next/link';
+import { ClientServiceCatalogSection } from '@/components/requests/ClientServiceCatalogAndModal';
 
 export default function ClientPortalDashboard() {
   const { clients, tasks, invoices, serviceRequests, addServiceRequest } = useSystemStore();
@@ -101,9 +102,9 @@ export default function ClientPortalDashboard() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {/* Client Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#262626] pb-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#262626] pb-4">
         <div>
           <span className="text-xs font-mono text-primary uppercase font-bold tracking-wider">
             Portal do Cliente • {client.companyName}
@@ -111,19 +112,14 @@ export default function ClientPortalDashboard() {
           <h2 className="text-2xl md:text-3xl font-black text-on-surface mt-1">
             Olá, {client.name.split(' ')[0]} 👋
           </h2>
-          <p className="text-sm text-on-surface-variant mt-1">
-            Veja o andamento da sua produção e solicite novos conteúdos com facilidade.
+          <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+            Acompanhe o andamento da sua esteira audiovisual e solicite serviços extras com 1 toque.
           </p>
         </div>
-
-        <button
-          onClick={() => setIsRequestModalOpen(true)}
-          className="bg-primary hover:bg-primary-hover text-white font-bold text-xs py-3 px-5 rounded flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Solicitar novo serviço</span>
-        </button>
       </div>
+
+      {/* 🚀 Giant Mega Hero Button & Pre-Options Catalog */}
+      <ClientServiceCatalogSection client={client} />
 
       {/* Main Quotas Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

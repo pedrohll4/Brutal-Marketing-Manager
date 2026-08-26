@@ -12,6 +12,7 @@ import {
   CreditCard,
   Megaphone,
   X,
+  Zap,
 } from 'lucide-react';
 import { SideNavBar } from './SideNavBar';
 
@@ -28,6 +29,7 @@ export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProp
     ? [
         { label: 'Início', href: '/portal-cliente', icon: LayoutDashboard },
         { label: 'Entregas', href: '/portal-cliente/entregas', icon: Film },
+        { label: '+ Pedir Extra', href: '/portal-cliente/solicitacoes', icon: Zap, highlight: true },
         { label: 'Faturas', href: '/portal-cliente/pagamentos', icon: CreditCard },
       ]
     : isEmployee
@@ -81,16 +83,30 @@ export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProp
         {mobileNavTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = pathname === tab.href;
+          const isHighlight = Boolean((tab as any).highlight);
+
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-mono transition-colors ${
-                isActive ? 'text-primary font-bold border-t-2 border-primary -mt-[2px]' : 'text-on-surface-variant'
+              className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-mono transition-all relative ${
+                isHighlight
+                  ? 'text-primary font-black'
+                  : isActive
+                  ? 'text-primary font-bold border-t-2 border-primary -mt-[2px]'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
-              <Icon className="w-5 h-5 mb-0.5" />
-              <span>{tab.label}</span>
+              {isHighlight ? (
+                <div className="w-9 h-9 -mt-3.5 mb-0.5 rounded-full bg-primary text-white flex items-center justify-center shadow-[0_2px_15px_rgba(255,85,0,0.6)] border-2 border-[#141414]">
+                  <Icon className="w-4 h-4 fill-white stroke-[2.5]" />
+                </div>
+              ) : (
+                <Icon className="w-5 h-5 mb-0.5" />
+              )}
+              <span className={isHighlight ? 'text-[9px] font-black text-primary uppercase tracking-tight' : ''}>
+                {tab.label}
+              </span>
             </Link>
           );
         })}
