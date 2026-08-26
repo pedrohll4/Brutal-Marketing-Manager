@@ -46,7 +46,7 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
       return true;
     }
 
-    if (role === 'EDITOR' || role === 'DESIGNER' || role === 'VIDEOMAKER') {
+    if (role === 'EMPLOYEE') {
       if (notif.roleTarget === 'CLIENT') return false;
       return true;
     }
