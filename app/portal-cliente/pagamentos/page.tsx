@@ -6,21 +6,41 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { PixPaymentModal } from '@/components/financial/PixPaymentModal';
 import { CreditCard, QrCode, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
+import { Client } from '@/lib/types';
 
 export default function ClientPagamentosPage() {
   const { clients, invoices } = useSystemStore();
   const { user, activeClientId } = useAuth();
 
-  const client =
+  const client: Client =
     clients.find(
       (c) =>
         c.id === activeClientId ||
         c.id === user?.clientId ||
-        c.email.toLowerCase() === user?.email.toLowerCase() ||
-        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
-    ) || clients[0];
+        c.email.toLowerCase() === (user?.email || '').toLowerCase() ||
+        (c.username && c.username.toLowerCase() === (user?.username || '').toLowerCase())
+    ) ||
+    clients[0] || {
+      id: user?.clientId || 'cli-portal',
+      name: user?.fullName || 'Cliente',
+      companyName: user?.fullName || 'Portal do Cliente',
+      email: user?.email || '',
+      phone: '',
+      document: '',
+      monthlyFee: 0,
+      contractedVideos: 0,
+      contractedPhotos: 0,
+      contractedCampaigns: 0,
+      extraVideoPrice: 150,
+      extraPhotoPrice: 80,
+      extraEventPrice: 500,
+      extraDailyPrice: 300,
+      status: 'ACTIVE',
+      contractModel: 'QUANTITY',
+      createdAt: new Date().toISOString(),
+    };
 
-  const clientInvoices = invoices.filter((i) => i.clientId === client?.id);
+  const clientInvoices = invoices.filter((i) => i.clientId === client.id);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
 
   return (

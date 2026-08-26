@@ -17,7 +17,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import { MediaApprovalModal } from '@/components/approvals/MediaApprovalModal';
-import { Task } from '@/lib/types';
+import { Task, Client } from '@/lib/types';
 import { useAuth } from '@/lib/context/AuthContext';
 import { isTaskForClient } from '@/lib/utils/clientMatcher';
 
@@ -25,7 +25,7 @@ export default function ClientEntregasPage() {
   const { clients, tasks } = useSystemStore();
   const { user, activeClientId } = useAuth();
 
-  const client =
+  const client: Client =
     clients.find(
       (c) =>
         c.id === activeClientId ||
@@ -33,7 +33,26 @@ export default function ClientEntregasPage() {
         c.email.toLowerCase() === (user?.email || '').toLowerCase() ||
         (c.username && c.username.toLowerCase() === (user?.username || '').toLowerCase()) ||
         (c.name.toLowerCase().includes('procampo') && (user?.email || '').includes('procampo'))
-    ) || clients[0];
+    ) ||
+    clients[0] || {
+      id: user?.clientId || 'cli-portal',
+      name: user?.fullName || 'Cliente',
+      companyName: user?.fullName || 'Portal do Cliente',
+      email: user?.email || '',
+      phone: '',
+      document: '',
+      monthlyFee: 0,
+      contractedVideos: 0,
+      contractedPhotos: 0,
+      contractedCampaigns: 0,
+      extraVideoPrice: 150,
+      extraPhotoPrice: 80,
+      extraEventPrice: 500,
+      extraDailyPrice: 300,
+      status: 'ACTIVE',
+      contractModel: 'QUANTITY',
+      createdAt: new Date().toISOString(),
+    };
 
   const clientTasks = tasks.filter((t) => isTaskForClient(t, client, user));
   const [selectedTaskForReview, setSelectedTaskForReview] = useState<Task | null>(null);

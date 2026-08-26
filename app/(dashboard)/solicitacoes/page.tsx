@@ -29,18 +29,22 @@ export default function SolicitacoesPage() {
   const handleCreateRequest = (e: React.FormEvent) => {
     e.preventDefault();
     const client = clients.find((c) => c.id === newRequestForm.clientId) || clients[0];
+    if (!client) {
+      setIsModalOpen(false);
+      return;
+    }
     const unitPrice =
       newRequestForm.serviceType === 'VIDEO'
-        ? client.extraVideoPrice
+        ? (client.extraVideoPrice || 150)
         : newRequestForm.serviceType === 'PHOTO'
-        ? client.extraPhotoPrice
-        : client.extraEventPrice;
+        ? (client.extraPhotoPrice || 80)
+        : (client.extraEventPrice || 500);
 
     const totalEstimated = unitPrice * newRequestForm.quantity;
 
     addServiceRequest({
       clientId: client.id,
-      clientName: client.name,
+      clientName: client.companyName || client.name,
       serviceType: newRequestForm.serviceType,
       quantity: Number(newRequestForm.quantity),
       unitPrice,

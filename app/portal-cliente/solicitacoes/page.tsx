@@ -28,22 +28,42 @@ import {
   ClientServiceRequestModal,
   PRESET_SERVICES,
 } from '@/components/requests/ClientServiceCatalogAndModal';
-import { ServiceType } from '@/lib/types';
+import { ServiceType, Client } from '@/lib/types';
 import Link from 'next/link';
 
 export default function ClientSolicitacoesPage() {
   const { clients, serviceRequests, addServiceRequest } = useSystemStore();
   const { user, activeClientId } = useAuth();
 
-  // Dynamically resolve logged-in client
-  const client =
+  // Dynamically resolve logged-in client with safe fallback
+  const client: Client =
     clients.find(
       (c) =>
         c.id === activeClientId ||
         c.id === user?.clientId ||
-        c.email.toLowerCase() === user?.email.toLowerCase() ||
-        (c.username && c.username.toLowerCase() === user?.username?.toLowerCase())
-    ) || clients[0];
+        c.email.toLowerCase() === (user?.email || '').toLowerCase() ||
+        (c.username && c.username.toLowerCase() === (user?.username || '').toLowerCase()) ||
+        (c.name.toLowerCase().includes('procampo') && (user?.email || '').includes('procampo'))
+    ) ||
+    clients[0] || {
+      id: user?.clientId || 'cli-portal',
+      name: user?.fullName || 'Cliente',
+      companyName: user?.fullName || 'Portal do Cliente',
+      email: user?.email || '',
+      phone: '',
+      document: '',
+      monthlyFee: 0,
+      contractedVideos: 0,
+      contractedPhotos: 0,
+      contractedCampaigns: 0,
+      extraVideoPrice: 150,
+      extraPhotoPrice: 80,
+      extraEventPrice: 500,
+      extraDailyPrice: 300,
+      status: 'ACTIVE',
+      contractModel: 'QUANTITY',
+      createdAt: new Date().toISOString(),
+    };
 
   const clientRequests = serviceRequests.filter((r) => r.clientId === client.id);
 

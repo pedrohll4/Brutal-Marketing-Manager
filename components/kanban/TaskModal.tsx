@@ -105,17 +105,19 @@ export function TaskModal({
     const selectedEmployee = employees.find((e) => e.id === formData.assigneeId);
     const selectedCampaign = campaigns.find((camp) => camp.id === formData.campaignId);
 
+    const clientName = selectedClient?.companyName || selectedClient?.name || 'Cliente Geral';
+
     if (taskToEdit) {
       updateTask(taskToEdit.id, {
         ...formData,
-        clientName: selectedClient.name,
+        clientName,
         assigneeName: selectedEmployee?.name,
         campaignName: selectedCampaign?.name,
       });
     } else {
       addTask({
         ...formData,
-        clientName: selectedClient.name,
+        clientName,
         assigneeName: selectedEmployee?.name,
         campaignName: selectedCampaign?.name,
       });

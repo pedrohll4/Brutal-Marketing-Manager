@@ -19,21 +19,41 @@ export interface QuotaCalculationResult {
 }
 
 export function calculateClientQuotas(
-  client: Client,
-  clientTasks: Task[],
+  client?: Client | null,
+  clientTasks: Task[] = [],
   approvedRequests: ServiceRequest[] = []
 ): QuotaCalculationResult {
+  if (!client) {
+    return {
+      contractedVideos: 0,
+      usedVideos: 0,
+      remainingVideos: 0,
+      extraVideos: 0,
+      contractedPhotos: 0,
+      usedPhotos: 0,
+      remainingPhotos: 0,
+      extraPhotos: 0,
+      baseMonthlyFee: 0,
+      extraVideosCost: 0,
+      extraPhotosCost: 0,
+      otherExtrasCost: 0,
+      totalExtrasCost: 0,
+      grandTotalCost: 0,
+      percentageUsed: 0,
+    };
+  }
+
   // Count produced and approved/published videos
-  const completedVideoTasks = clientTasks.filter(
-    (t) => t.taskType === 'VIDEO' && ['APPROVED', 'PUBLISHED', 'IN_REVIEW', 'IN_PRODUCTION'].includes(t.status)
+  const completedVideoTasks = (clientTasks || []).filter(
+    (t) => t && t.taskType === 'VIDEO' && ['APPROVED', 'PUBLISHED', 'IN_REVIEW', 'IN_PRODUCTION'].includes(t.status)
   );
 
-  const completedPhotoTasks = clientTasks.filter(
-    (t) => t.taskType === 'PHOTO' && ['APPROVED', 'PUBLISHED', 'IN_REVIEW', 'IN_PRODUCTION'].includes(t.status)
+  const completedPhotoTasks = (clientTasks || []).filter(
+    (t) => t && t.taskType === 'PHOTO' && ['APPROVED', 'PUBLISHED', 'IN_REVIEW', 'IN_PRODUCTION'].includes(t.status)
   );
 
-  const explicitExtraVideos = clientTasks.filter(
-    (t) => t.taskType === 'VIDEO' && t.isExtra
+  const explicitExtraVideos = (clientTasks || []).filter(
+    (t) => t && t.taskType === 'VIDEO' && t.isExtra
   ).length;
 
   const totalVideosProduced = completedVideoTasks.length;
@@ -55,20 +75,24 @@ export function calculateClientQuotas(
   const remainingPhotos = Math.max(0, contractedPhotos - totalPhotosProduced);
 
   // Additional approved extras from requests
-  const otherExtrasCost = approvedRequests
-    .filter(req => req.status === 'APPROVED' && !['VIDEO', 'PHOTO'].includes(req.serviceType))
-    .reduce((sum, req) => sum + req.totalEstimated, 0);
+  const otherExtrasCost = (approvedRequests || [])
+    .filter(req => req && req.status === 'APPROVED' && !['VIDEO', 'PHOTO'].includes(req.serviceType))
+    .reduce((sum, req) => sum + (req.totalEstimated || 0), 0);
 
-  // Prices
-  const baseMonthlyFee = client.monthlyFee || 0;
-  const extraVideosCost = extraVideos * (client.extraVideoPrice || 150);
-  const extraPhotosCost = extraPhotos * (client.extraPhotoPrice || 80);
+  // Extra unit prices
+  const extraVideoUnitPrice = client.extraVideoPrice || 150;
+  const extraPhotoUnitPrice = client.extraPhotoPrice || 80;
+
+  const extraVideosCost = extraVideos * extraVideoUnitPrice;
+  const extraPhotosCost = extraPhotos * extraPhotoUnitPrice;
   const totalExtrasCost = extraVideosCost + extraPhotosCost + otherExtrasCost;
+
+  const baseMonthlyFee = client.monthlyFee || 0;
   const grandTotalCost = baseMonthlyFee + totalExtrasCost;
 
-  const percentageUsed = contractedVideos > 0
-    ? Math.min(100, Math.round((totalVideosProduced / contractedVideos) * 100))
-    : 100;
+  const percentageUsed = contractedVideos > 0 
+    ? Math.min(100, Math.round((usedVideos / contractedVideos) * 100))
+    : 0;
 
   return {
     contractedVideos,

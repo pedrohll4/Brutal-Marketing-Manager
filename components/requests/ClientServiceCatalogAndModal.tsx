@@ -47,7 +47,7 @@ export const PRESET_SERVICES: ServiceOptionDef[] = [
     badge: 'Mais Pedido 🔥',
     description: 'Captação ou edição de vídeo extra (Reels/TikTok/Comercial) com trilha e color grading.',
     icon: Film,
-    getPrice: (c) => c.extraVideoPrice || 150,
+    getPrice: (c) => c?.extraVideoPrice || 150,
     popular: true,
     unitLabel: 'por vídeo',
   },
@@ -57,7 +57,7 @@ export const PRESET_SERVICES: ServiceOptionDef[] = [
     badge: 'Alta Resolução',
     description: 'Lote de fotos tratadas para produtos, estandes, diretoria ou redes sociais.',
     icon: Camera,
-    getPrice: (c) => c.extraPhotoPrice || 80,
+    getPrice: (c) => c?.extraPhotoPrice || 80,
     unitLabel: 'por foto tratada',
   },
   {
@@ -66,7 +66,7 @@ export const PRESET_SERVICES: ServiceOptionDef[] = [
     badge: 'Presencial',
     description: 'Equipe de captação no local do seu evento com fotos, vídeos dinâmicos e entrevistas.',
     icon: Calendar,
-    getPrice: (c) => c.extraEventPrice || 500,
+    getPrice: (c) => c?.extraEventPrice || 500,
     popular: true,
     unitLabel: 'por evento',
   },
@@ -76,7 +76,7 @@ export const PRESET_SERVICES: ServiceOptionDef[] = [
     badge: 'Videomaker Dedicado',
     description: 'Diária exclusiva de gravação na sua empresa, estúdio ou locação externa.',
     icon: Video,
-    getPrice: (c) => c.extraDailyPrice || 300,
+    getPrice: (c) => c?.extraDailyPrice || 300,
     unitLabel: 'por diária',
   },
 ];
@@ -226,13 +226,13 @@ export function ClientServiceRequestModal({
   const getUnitPrice = (type: ServiceType) => {
     switch (type) {
       case 'VIDEO':
-        return client.extraVideoPrice || 150;
+        return client?.extraVideoPrice || 150;
       case 'PHOTO':
-        return client.extraPhotoPrice || 80;
+        return client?.extraPhotoPrice || 80;
       case 'EVENT':
-        return client.extraEventPrice || 500;
+        return client?.extraEventPrice || 500;
       case 'DAILY':
-        return client.extraDailyPrice || 300;
+        return client?.extraDailyPrice || 300;
       default:
         return 150;
     }
@@ -250,8 +250,8 @@ export function ClientServiceRequestModal({
     }
 
     addServiceRequest({
-      clientId: client.id,
-      clientName: client.companyName || client.name,
+      clientId: client?.id || 'cli-generic',
+      clientName: client?.companyName || client?.name || 'Cliente',
       serviceType: selectedService,
       quantity,
       unitPrice,

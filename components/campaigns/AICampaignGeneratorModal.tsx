@@ -61,7 +61,25 @@ export function AICampaignGeneratorModal({ isOpen, onClose }: AICampaignGenerato
   const [selectedScriptIndex, setSelectedScriptIndex] = useState(0);
   const [viewDetailMode, setViewDetailMode] = useState<'THEMES' | 'SCRIPTS'>('THEMES');
 
-  const selectedClient = clients.find((c) => c.id === clientId) || clients[0];
+  const selectedClient = clients.find((c) => c.id === clientId) || clients[0] || {
+    id: 'cli-generic',
+    name: 'Cliente Geral',
+    companyName: 'Cliente Geral',
+    email: '',
+    phone: '',
+    document: '',
+    monthlyFee: 0,
+    contractedVideos: 0,
+    contractedPhotos: 0,
+    contractedCampaigns: 0,
+    extraVideoPrice: 150,
+    extraPhotoPrice: 80,
+    extraEventPrice: 500,
+    extraDailyPrice: 300,
+    status: 'ACTIVE',
+    contractModel: 'QUANTITY',
+    createdAt: new Date().toISOString(),
+  };
 
   const handleGenerate = async () => {
     // If manual mode, create simple campaign and exit
@@ -73,7 +91,7 @@ export function AICampaignGeneratorModal({ isOpen, onClose }: AICampaignGenerato
       addCampaign({
         name: manualCampaignName,
         clientId: selectedClient.id,
-        clientName: selectedClient.name,
+        clientName: selectedClient.companyName || selectedClient.name,
         description: manualDescription || 'Campanha criada manualmente.',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],

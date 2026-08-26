@@ -26,14 +26,14 @@ import { useAuth } from '@/lib/context/AuthContext';
 import Link from 'next/link';
 import { ClientServiceCatalogSection } from '@/components/requests/ClientServiceCatalogAndModal';
 import { isTaskForClient } from '@/lib/utils/clientMatcher';
-import { Task } from '@/lib/types';
+import { Task, Client } from '@/lib/types';
 
 export default function ClientPortalDashboard() {
   const { clients, tasks, invoices, serviceRequests } = useSystemStore();
   const { user, activeClientId } = useAuth();
 
-  // Dynamically resolve logged-in client
-  const client =
+  // Dynamically resolve logged-in client with safe fallback
+  const client: Client =
     clients.find(
       (c) =>
         c.id === activeClientId ||
@@ -41,7 +41,26 @@ export default function ClientPortalDashboard() {
         c.email.toLowerCase() === (user?.email || '').toLowerCase() ||
         (c.username && c.username.toLowerCase() === (user?.username || '').toLowerCase()) ||
         (c.name.toLowerCase().includes('procampo') && (user?.email || '').includes('procampo'))
-    ) || clients[0];
+    ) ||
+    clients[0] || {
+      id: user?.clientId || 'cli-portal',
+      name: user?.fullName || 'Cliente',
+      companyName: user?.fullName || 'Portal do Cliente',
+      email: user?.email || '',
+      phone: '',
+      document: '',
+      monthlyFee: 0,
+      contractedVideos: 0,
+      contractedPhotos: 0,
+      contractedCampaigns: 0,
+      extraVideoPrice: 150,
+      extraPhotoPrice: 80,
+      extraEventPrice: 500,
+      extraDailyPrice: 300,
+      status: 'ACTIVE',
+      contractModel: 'QUANTITY',
+      createdAt: new Date().toISOString(),
+    };
 
   // Match all tasks for this client (robust matcher)
   const clientTasks = tasks.filter((t) => isTaskForClient(t, client, user));
