@@ -19,6 +19,45 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
+  // Role-based notification filtering: Clients see ONLY client notifications; Staff/Admin see management notifications
+  const userNotifications = notifications.filter((notif) => {
+    if (isClient) {
+      if (notif.roleTarget && notif.roleTarget !== 'CLIENT' && notif.roleTarget !== 'ALL') return false;
+      if (notif.clientId) {
+        const uCid = user?.clientId || '';
+        const uMail = (user?.email || '').toLowerCase();
+        const matchesClient =
+          notif.clientId === uCid ||
+          uMail.includes(notif.clientId) ||
+          (notif.clientId === 'cli-procampo' && uMail.includes('procampo'));
+        if (!matchesClient) return false;
+      }
+      if (
+        notif.link &&
+        (notif.link === '/solicitacoes' ||
+          notif.link === '/producao' ||
+          notif.link === '/financeiro' ||
+          notif.link === '/campanhas' ||
+          notif.link === '/relatorios' ||
+          notif.link === '/funcionarios')
+      ) {
+        return false;
+      }
+      return true;
+    }
+
+    if (role === 'EDITOR' || role === 'DESIGNER' || role === 'VIDEOMAKER') {
+      if (notif.roleTarget === 'CLIENT') return false;
+      return true;
+    }
+
+    // Owner / Admin
+    if (notif.roleTarget === 'CLIENT') return false;
+    return true;
+  });
+
+  const unreadCount = userNotifications.filter((n) => !n.isRead).length;
+
   // Close popovers on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -96,7 +135,7 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
             title="Notificações"
           >
             <Bell className="w-5 h-5" />
-            {unreadNotificationCount > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-[#131313] animate-pulse" />
             )}
           </button>
@@ -106,13 +145,13 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#262626] bg-[#101010]">
                 <div className="flex items-center gap-2">
                   <h4 className="font-bold text-sm text-on-surface">Notificações</h4>
-                  {unreadNotificationCount > 0 && (
+                  {unreadCount > 0 && (
                     <span className="bg-primary/20 text-primary text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
-                      {unreadNotificationCount} novas
+                      {unreadCount} novas
                     </span>
                   )}
                 </div>
-                {unreadNotificationCount > 0 && (
+                {unreadCount > 0 && (
                   <button
                     onClick={markAllNotificationsAsRead}
                     className="text-[11px] text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors"
@@ -124,12 +163,12 @@ export function TopNavBar({ onToggleMobileMenu }: TopNavBarProps) {
               </div>
 
               <div className="max-h-72 overflow-y-auto divide-y divide-[#1f1f1f]">
-                {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-on-surface-variant">
+                {userNotifications.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-on-surface-variant font-mono">
                     Nenhuma notificação no momento.
                   </div>
                 ) : (
-                  notifications.map((notif) => (
+                  userNotifications.map((notif) => (
                     <div
                       key={notif.id}
                       onClick={() => markNotificationAsRead(notif.id)}

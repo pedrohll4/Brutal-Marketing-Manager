@@ -1018,9 +1018,10 @@ export const mockMonthlyReports: MonthlyReport[] = [
 ];
 
 export const mockNotifications: NotificationItem[] = [
+  // Staff & Admin Notifications
   {
     id: "notif-1",
-    roleTarget: "ALL",
+    roleTarget: "ADMIN",
     title: "Nova Solicitação de Extra",
     message: "Nicole Procampo solicitou 3 vídeos extras para entrega em Agosto.",
     link: "/solicitacoes",
@@ -1030,9 +1031,9 @@ export const mockNotifications: NotificationItem[] = [
   },
   {
     id: "notif-2",
-    roleTarget: "ALL",
-    title: "Vídeo Finalizado",
-    message: "João Silva concluiu o Vídeo Institucional da Procampo.",
+    roleTarget: "STAFF",
+    title: "Vídeo Aguardando Edição",
+    message: "A gravação do Vídeo Institucional da Procampo foi finalizada e aguarda montagem.",
     link: "/producao",
     type: "TASK",
     isRead: false,
@@ -1040,7 +1041,7 @@ export const mockNotifications: NotificationItem[] = [
   },
   {
     id: "notif-3",
-    roleTarget: "ALL",
+    roleTarget: "ADMIN",
     title: "Pagamento Confirmado",
     message: "Pagamento de R$ 4.500 de TechRush Electronics foi confirmado via PIX.",
     link: "/financeiro",
@@ -1048,14 +1049,39 @@ export const mockNotifications: NotificationItem[] = [
     isRead: true,
     createdAt: "Há 2 horas",
   },
+
+  // Client Specific Notifications (Nicole Procampo)
   {
-    id: "notif-4",
-    roleTarget: "ALL",
-    title: "Campanha Concluída",
-    message: "Campanha Coleção Summer Haute 2025 (Vanguard Studios) foi concluída com sucesso.",
-    link: "/campanhas",
-    type: "CAMPAIGN",
+    id: "notif-cli-1",
+    clientId: "cli-procampo",
+    roleTarget: "CLIENT",
+    title: "🎬 Novo Vídeo Disponível para Sua Aprovação!",
+    message: "O vídeo 'Apresentação da Linha de Bioestimulantes 2026' está pronto para sua revisão na central de entregas.",
+    link: "/portal-cliente/entregas",
+    type: "APPROVAL",
+    isRead: false,
+    createdAt: "Há 15 minutos",
+  },
+  {
+    id: "notif-cli-2",
+    clientId: "cli-procampo",
+    roleTarget: "CLIENT",
+    title: "⚡ Solicitação de Extras Confirmada",
+    message: "Seus 3 vídeos adicionais foram aceitos e já entraram na esteira de produção.",
+    link: "/portal-cliente/solicitacoes",
+    type: "REQUEST",
+    isRead: false,
+    createdAt: "Há 1 hora",
+  },
+  {
+    id: "notif-cli-3",
+    clientId: "cli-procampo",
+    roleTarget: "CLIENT",
+    title: "💳 Fatura do Mês Disponível",
+    message: "Sua fatura de Agosto está pronta para consulta e pagamento com chave PIX instantânea.",
+    link: "/portal-cliente",
+    type: "PAYMENT",
     isRead: true,
-    createdAt: "Ontem às 18:30",
+    createdAt: "Hoje às 08:00",
   },
 ];

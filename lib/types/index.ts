@@ -272,11 +272,12 @@ export interface MonthlyReport {
 export interface NotificationItem {
   id: string;
   userId?: string;
-  roleTarget?: UserRole | 'ALL';
+  clientId?: string;
+  roleTarget?: UserRole | 'ALL' | 'STAFF';
   title: string;
   message: string;
   link?: string;
-  type: 'REQUEST' | 'TASK' | 'PAYMENT' | 'CAMPAIGN' | 'REPORT' | 'SYSTEM';
+  type: 'REQUEST' | 'TASK' | 'PAYMENT' | 'CAMPAIGN' | 'REPORT' | 'SYSTEM' | 'APPROVAL';
   isRead: boolean;
   createdAt: string;
 }

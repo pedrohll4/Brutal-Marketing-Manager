@@ -252,6 +252,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     syncTaskToSupabase(newTask);
     setNotifications((prev) => [{
       id: `notif-${Date.now()}`,
+      roleTarget: 'STAFF',
       title: 'Nova Tarefa Criada',
       message: `Tarefa "${newTask.title}" adicionada para ${newTask.clientName}.`,
       link: '/producao',
@@ -274,12 +275,14 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
     let taskName = 'Conteúdo';
     let clientName = 'Cliente';
+    let clientId = '';
 
     setTasks((prev) => {
       const task = prev.find((t) => t.id === taskId);
       if (!task) return prev;
       taskName = task.title;
       clientName = task.clientName;
+      clientId = task.clientId;
 
       const completedAt =
         ['APPROVED', 'PUBLISHED'].includes(newStatus) && !task.completedAt
@@ -292,9 +295,11 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     });
 
     if (newStatus === 'APPROVED') {
+      // Notification specifically for STAFF / ADMIN (NOT for client)
       setNotifications((prev) => [
         {
           id: `notif-${Date.now()}`,
+          roleTarget: 'ADMIN',
           title: '🎬 Vídeo Aprovado pelo Cliente!',
           message: `${clientName} aprovou "${taskName}". Pronto para publicação e agendamento!`,
           link: '/producao',
@@ -306,9 +311,25 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       ]);
       addToast({
         title: 'Vídeo Aprovado! 🎉',
-        description: `"${taskName}" foi aprovado com sucesso e a equipe foi notificada!`,
+        description: `"${taskName}" foi aprovado com sucesso!`,
         type: 'success',
       });
+    } else if (newStatus === 'CLIENT_REVIEW') {
+      // Notification specifically for CLIENT
+      setNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          roleTarget: 'CLIENT',
+          clientId: clientId,
+          title: '🎬 Novo Vídeo Disponível para Sua Aprovação!',
+          message: `O vídeo "${taskName}" está pronto para sua revisão na central de entregas.`,
+          link: '/portal-cliente/entregas',
+          type: 'APPROVAL',
+          isRead: false,
+          createdAt: 'Agora mesmo',
+        },
+        ...prev,
+      ]);
     } else if (newStatus === 'PUBLISHED') {
       addToast({
         title: 'Conteúdo Publicado! 🚀',
@@ -413,6 +434,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     syncRequestToSupabase(newRequest);
     setNotifications((prev) => [{
       id: `notif-${Date.now()}`,
+      roleTarget: 'ADMIN',
       title: 'Nova Solicitação de Extra',
       message: `${newRequest.clientName} solicitou ${newRequest.quantity}x ${newRequest.serviceType} (R$ ${newRequest.totalEstimated}).`,
       link: '/solicitacoes',
@@ -472,6 +494,22 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     const updatedReq = updatedReqs.find((r) => r.id === requestId);
     if (updatedReq) syncRequestToSupabase(updatedReq);
 
+    // Notify client that extra was approved
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        roleTarget: 'CLIENT',
+        clientId: req.clientId,
+        title: '⚡ Solicitação de Extra Aprovada!',
+        message: `Sua solicitação de ${req.quantity}x ${req.serviceType} foi aprovada e adicionada à esteira de produção.`,
+        link: '/portal-cliente/solicitacoes',
+        type: 'REQUEST',
+        isRead: false,
+        createdAt: 'Agora mesmo',
+      },
+      ...prev,
+    ]);
+
     setInvoices((prev) =>
       prev.map((inv) => {
         if (inv.clientId === req.clientId && inv.referenceMonth === new Date().getMonth() + 1) {
@@ -507,15 +545,30 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
     });
     const invoice = invoices.find((i) => i.id === invoiceId);
     if (invoice) {
-      setNotifications((prev) => [{
-        id: `notif-${Date.now()}`,
-        title: 'Pagamento Confirmado',
-        message: `Fatura de ${invoice.clientName} (R$ ${invoice.totalAmount}) foi quitada.`,
-        link: '/financeiro',
-        type: 'PAYMENT',
-        isRead: false,
-        createdAt: 'Agora mesmo',
-      }, ...prev]);
+      setNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          roleTarget: 'ADMIN',
+          title: 'Pagamento Confirmado',
+          message: `Fatura de ${invoice.clientName} (R$ ${invoice.totalAmount}) foi quitada via PIX.`,
+          link: '/financeiro',
+          type: 'PAYMENT',
+          isRead: false,
+          createdAt: 'Agora mesmo',
+        },
+        {
+          id: `notif-${Date.now() + 1}`,
+          roleTarget: 'CLIENT',
+          clientId: invoice.clientId,
+          title: '✓ Pagamento Confirmado com Sucesso',
+          message: `Confirmamos o recebimento do pagamento da sua fatura de R$ ${invoice.totalAmount}. Muito obrigado!`,
+          link: '/portal-cliente',
+          type: 'PAYMENT',
+          isRead: false,
+          createdAt: 'Agora mesmo',
+        },
+        ...prev,
+      ]);
     }
     addToast({ title: 'Pagamento Confirmado! 💸', description: 'Fatura atualizada para PAGO.', type: 'success' });
   };
