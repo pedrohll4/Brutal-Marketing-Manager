@@ -36,7 +36,7 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
 
   // Nav Items definition
   const adminNavItems = [
-    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Clientes', href: '/clientes', icon: Users },
     { label: 'Produção', href: '/producao', icon: Film },
     { label: 'Campanhas', href: '/campanhas', icon: Megaphone },
@@ -49,7 +49,7 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
   ];
 
   const employeeNavItems = [
-    { label: 'Painel Operacional', href: '/', icon: LayoutDashboard },
+    { label: 'Painel Operacional', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Produção Audiovisual', href: '/producao', icon: Film },
     { label: 'Agenda de Gravações', href: '/calendario', icon: Calendar },
     { label: 'Campanhas', href: '/campanhas', icon: Megaphone },
@@ -72,7 +72,7 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
       >
         {/* Brand Logo Header */}
         <div className="px-6 mb-7">
-          <Link href={isClient ? '/portal-cliente' : '/'} className="group block">
+          <Link href={isClient ? '/portal-cliente' : '/dashboard'} className="group block">
             <div className="py-2 flex items-center justify-center">
               <img
                 src="/images/brutal-logo-white-transparent.png"
@@ -121,7 +121,7 @@ export function SideNavBar({ className = '', onItemClick }: SideNavBarProps) {
         {/* Navigation Links */}
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && item.href !== '/portal-cliente' && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/portal-cliente' && pathname.startsWith(item.href));
             const Icon = item.icon;
 
             return (

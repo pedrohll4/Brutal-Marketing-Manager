@@ -34,14 +34,14 @@ export function MobileNav({ isMobileMenuOpen, onCloseMobileMenu }: MobileNavProp
       ]
     : isEmployee
     ? [
-        { label: 'Início', href: '/', icon: LayoutDashboard },
+        { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Produção', href: '/producao', icon: Film },
         { label: 'Agenda', href: '/calendario', icon: Calendar },
         { label: 'Campanhas', href: '/campanhas', icon: Megaphone },
         { label: 'Clientes', href: '/clientes', icon: Users },
       ]
     : [
-        { label: 'Início', href: '/', icon: LayoutDashboard },
+        { label: 'Início', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Clientes', href: '/clientes', icon: Users },
         { label: 'Produção', href: '/producao', icon: Film },
         { label: 'Agenda', href: '/calendario', icon: Calendar },

@@ -22,7 +22,7 @@ export default function LoginPage() {
       if (user.role === 'CLIENT') {
         router.replace('/portal-cliente');
       } else {
-        router.replace('/');
+        router.replace('/dashboard');
       }
     }
   }, [user, isLoading, router]);
@@ -39,7 +39,7 @@ export default function LoginPage() {
       if (result.role === 'CLIENT') {
         router.replace('/portal-cliente');
       } else {
-        router.replace('/');
+        router.replace('/dashboard');
       }
     } else {
       setErrorMsg(result.error || 'Credenciais inválidas. Verifique seu login e senha.');

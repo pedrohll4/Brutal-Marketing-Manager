@@ -6,7 +6,7 @@ import { MetricsBento } from '@/components/dashboard/MetricsBento';
 import { ProductionChart } from '@/components/dashboard/ProductionChart';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { Download, Sparkles, Plus } from 'lucide-react';
+import { Download, Sparkles, Plus, Globe } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardHomePage() {
@@ -28,6 +28,15 @@ export default function DashboardHomePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            target="_blank"
+            className="px-3.5 py-2 rounded bg-transparent border border-[#2a2a2a] hover:bg-[#1a1a1a] text-zinc-300 hover:text-white text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Globe className="w-3.5 h-3.5 text-primary" />
+            <span>Ver Landing Page</span>
+          </Link>
+
           {!isEmployee && (
             <Link
               href="/relatorios"

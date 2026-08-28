@@ -22,7 +22,7 @@ import {
   syncInvoiceToSupabase,
   syncProfileToSupabase,
 } from '@/lib/supabase/syncService';
-import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase/client';
 
 export interface ToastMessage {
   id: string;
@@ -44,6 +44,7 @@ interface SystemStoreContextType {
   unreadNotificationCount: number;
   toasts: ToastMessage[];
   isLoadingData: boolean;
+  refreshCloudData: () => Promise<void>;
 
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
@@ -106,8 +107,28 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // ────────────────────────────────────────────────────────────
-  // BOOT — load from Supabase (source of truth)
+  // REVALIDATION & REALTIME SYNC (Cloud Source of Truth)
   // ────────────────────────────────────────────────────────────
+  const refreshCloudData = useCallback(async () => {
+    try {
+      const cloudData = await fetchInitialDataFromSupabase();
+      if (cloudData) {
+        setClients(cloudData.clients);
+        setEmployees(cloudData.employees);
+        setCampaigns(cloudData.campaigns);
+        setTasks(cloudData.tasks);
+        setServiceRequests(cloudData.serviceRequests);
+        setCalendarEvents(cloudData.calendarEvents);
+        setInvoices(cloudData.invoices);
+      }
+    } catch (err) {
+      console.warn('Realtime refresh error:', err);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
+
+  // 1. Initial Boot
   useEffect(() => {
     // Restore settings from localStorage
     try {
@@ -119,20 +140,56 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
       if (pb) setPixBeneficiary(pb);
     } catch {}
 
-    // Fetch all live data from Supabase
-    fetchInitialDataFromSupabase().then((cloudData) => {
-      if (cloudData) {
-        setClients(cloudData.clients);
-        setEmployees(cloudData.employees);
-        setCampaigns(cloudData.campaigns);
-        setTasks(cloudData.tasks);
-        setServiceRequests(cloudData.serviceRequests);
-        setCalendarEvents(cloudData.calendarEvents);
-        setInvoices(cloudData.invoices);
+    refreshCloudData();
+  }, [refreshCloudData]);
+
+  // 2. Auto-Revalidation on App Focus & Mobile Screen Unlock
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        refreshCloudData();
       }
-      setIsLoadingData(false);
-    });
-  }, []);
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    // 3. Periodic Background Sync (every 15s to guarantee 100% freshness on mobile)
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshCloudData();
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      clearInterval(interval);
+    };
+  }, [refreshCloudData]);
+
+  // 4. Supabase Realtime WebSocket Channel
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    // Listen for postgres changes across all tables in real-time
+    const channel = supabase
+      .channel('brutal-realtime-db-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        () => {
+          refreshCloudData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [refreshCloudData]);
 
   // ────────────────────────────────────────────────────────────
   // SETTINGS
@@ -596,6 +653,7 @@ export function SystemStoreProvider({ children }: { children: React.ReactNode })
         clients, employees, campaigns, tasks, calendarEvents,
         serviceRequests, invoices, monthlyReports, notifications,
         unreadNotificationCount, toasts, isLoadingData,
+        refreshCloudData,
         addToast, removeToast,
         addClient, updateClient, deleteClient,
         addEmployee, updateEmployee,
